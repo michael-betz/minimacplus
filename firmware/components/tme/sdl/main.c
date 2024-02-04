@@ -2,9 +2,9 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 
@@ -18,6 +18,8 @@
 #include "tmeconfig.h"
 #include "snd.h"
 #include "disp.h"
+#include "emu.h"
+#include "rtc.h"
 
 static void *loadRom(char *file) {
 	int i;
@@ -26,7 +28,7 @@ static void *loadRom(char *file) {
 	i=read(f, ret, TME_ROMSIZE);
 	if (i!=TME_ROMSIZE) {
 		perror("reading rom");
-		exit(1);
+		exit(-1);
 	}
 	return ret;
 }
@@ -41,7 +43,12 @@ void saveRtcMem(char *data) {
 }
 
 int main(int argc, char **argv) {
-	void *rom=loadRom("rom.bin");
+	if (argc != 2) {
+		printf("Usage: %s rom_file.bin hdd_file.bin\n", argv[0]);
+		return -1;
+	}
+
+	void *rom=loadRom(argv[1]);
 	FILE *f=fopen("pram.dat", "r");
 	if (f!=NULL) {
 		char data[32];
@@ -51,5 +58,5 @@ int main(int argc, char **argv) {
 		printf("Loaded RTC data from pram.dat\n");
 	}
 	sdlDispAudioInit();
-	tmeStartEmu(rom);
+	tmeStartEmu(rom, argv[2]);
 }

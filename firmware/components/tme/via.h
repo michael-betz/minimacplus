@@ -1,3 +1,4 @@
+#pragma once
 
 #define VIA_CA1 0
 #define VIA_CA2 1

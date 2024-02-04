@@ -1,3 +1,5 @@
+#pragma once
+
 #define MOUSE_QXA (1<<0)
 #define MOUSE_QXB (1<<1)
 #define MOUSE_QYA (1<<2)

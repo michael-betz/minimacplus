@@ -1,9 +1,9 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 #include <stdio.h>
@@ -28,9 +28,9 @@
 #include "snd.h"
 #include "mouse.h"
 #include <stdbool.h>
-#include "esp_heap_caps.h"
+// #include "esp_heap_caps.h"
 #include <byteswap.h>
-#include "esp_spiram.h"
+// #include "esp_spiram.h"
 #include "network/localtalk.h"
 
 
@@ -158,7 +158,7 @@ static void regenMemmap(int remapRom) {
 			memmap[i].flags=0;
 		}
 	}
-	
+
 	//0x40000-0x50000 is ROM
 	memmap[0x400000/MEMMAP_ES].memAddr=macRom;
 	memmap[0x400000/MEMMAP_ES].flags=FLAG_RO;
@@ -313,7 +313,7 @@ static void ramInit() {
 		uint32_t *p=(uint32_t*)getRamPtr(i^0x25A500);
 		*p=rand();
 	}
-	
+
 	printf("Readback...\n");
 	srand(0);
 	for (int i=0; i<TME_RAMSIZE; i+=4) {
@@ -465,7 +465,7 @@ void m68k_pc_changed_handler_function(unsigned int address) {
 }
 
 
-//Should be called every second. 
+//Should be called every second.
 void printFps() {
 	struct timeval tv;
 	static struct timeval oldtv;
@@ -480,7 +480,7 @@ void printFps() {
 	oldtv.tv_usec=tv.tv_usec;
 }
 
-void tmeStartEmu(void *rom) {
+void tmeStartEmu(void *rom, char *hdName) {
 	int ca1=0, ca2=0;
 	int x, frame=0;
 	int cyclesPerSec=0;
@@ -489,7 +489,9 @@ void tmeStartEmu(void *rom) {
 	rom_remap=1;
 	regenMemmap(1);
 	printf("Creating HD and registering it...\n");
-	SCSIDevice *hd=hdCreate("hd.img");
+	if (hdName == NULL)
+		hdName = "hd.img";
+	SCSIDevice *hd=hdCreate(hdName);
 	ncrRegisterDevice(6, hd);
 	viaClear(VIA_PORTA, 0x7F);
 	viaSet(VIA_PORTA, 0x80);

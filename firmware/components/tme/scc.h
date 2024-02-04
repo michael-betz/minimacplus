@@ -1,3 +1,4 @@
+#pragma once
 
 #define SCC_CHANA 0
 #define SCC_CHANB 1
