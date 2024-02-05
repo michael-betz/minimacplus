@@ -2,9 +2,9 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 #include <stdio.h>
@@ -48,12 +48,11 @@ static void writeSector(HdPriv *hd, unsigned int lba, uint8_t *data) {
 
 static int hdScsiCmd(SCSITransferData *data, unsigned int cmd, unsigned int len, unsigned int lba, void *arg) {
 	int ret=0;
-	static uint8_t *bb=NULL;
 	HdPriv *hd=(HdPriv*)arg;
 	if (cmd==0x8 || cmd==0x28) { //read
 		printf("HD: Read %d bytes from LBA %d.\n", len*512, lba);
 		assert(esp_partition_read(hd->part, lba*512, data->data, len*512)==ESP_OK);
-#if 0 
+#if 0
 		//alternate mmap solution
 		uint8_t *buf;
 		spi_flash_mmap_handle_t handle;
@@ -96,7 +95,7 @@ static int hdScsiCmd(SCSITransferData *data, unsigned int cmd, unsigned int len,
 	return ret;
 }
 
-SCSIDevice *hdCreate(char *file) {
+SCSIDevice *hdCreate() {
 	SCSIDevice *ret=malloc(sizeof(SCSIDevice));
 	memset(ret, 0, sizeof(SCSIDevice));
 	HdPriv *hd=malloc(sizeof(HdPriv));

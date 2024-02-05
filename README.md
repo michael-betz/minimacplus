@@ -10,11 +10,11 @@ The firmware for this build runs on an ESP32-Wrover module. To compile this, you
 and ESP-IDF, the SDK for the ESP32 in the ESP32-Wrover module. You can find instructions on how to install
 these on the Espressif ESP-IDF github page: https://github.com/espressif/esp-idf
 
-This firmware can also be compiled for an ESP32-Wrover-Kit development board, provided it contains the 
+This firmware can also be compiled for an ESP32-Wrover-Kit development board, provided it contains the
 Wrover module with the 4MiB additional PSRAM. To do this, run `make menuconfig`
 and under `component config`, `Tiny Mac Emulator options`, select the Wrover-Kit display. Depending on your
-devboard, you may also need to lower the SPI flash/psram clock speed: set 
-`make menuconfig` -> `serial flasher config` -> `Flash SPI speed` to 40MHz if you get crashes or if 
+devboard, you may also need to lower the SPI flash/psram clock speed: set
+`make menuconfig` -> `serial flasher config` -> `Flash SPI speed` to 40MHz if you get crashes or if
 the memory test fails.
 
 ## Obtaining a ROM file
@@ -25,14 +25,14 @@ firmware/flashrom.sh file to flash it, or manually flash it to address 0x100000.
 
 ## Obtaining a hard disk image
 
-The emulator needs a hard disk image to boot from. For an un-modified partitions.csv on a 4MiB flash device,
-this image needs to be 1433600 bytes, or 2800 512-byte-sized blocks. The hard disk image needs a version
+The emulator needs a hard disk image to boot from. For an un-modified partitions.csv on a 16MiB flash device,
+this image can be up to 1179648 bytes, or 14 MiB large. The hard disk image needs a version
 of the Macintosh operating system installed. The easiest way to do this, in my experience, is using the Mac
 Plus emulator in MESS:
 
-* Create a HD image of the correct size: ``chdman createhd -o my_hd.chd -s 1433600``
+* Create a HD image of the correct size: ``chdman createhd -o my_hd.chd -s 1179648``
 * Install stuff on this HD image, Refer to e.g. https://mamedev.emulab.it/etabeta/2010/04/10/mess-how-to-episode-ii-apple-macintosh-plus/ on how to do this.
-* Extract the raw HD image: ``chdman createraw -i my_hd.chd -o my_hd.img``
+* Extract the raw HD image: ``chdman extractraw -i my_hd.chd -o my_hd.img``
 * Flash ``my_hd.img`` to the ESP32 using ``flashhd.sh`` or by manually flashing it to address 0x120000.
 
 A good trick on Linux to move files from your host OS to these images is mounting them. As root:

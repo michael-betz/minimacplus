@@ -1,9 +1,9 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 #include <stdint.h>
@@ -11,15 +11,15 @@
 #include "ncr.h"
 #include "m68k.h"
 
-static const char* const regNamesR[]={
-	"CURSCSIDATA","INITIATORCMD", "MODE", "TARGETCMD", "CURSCSISTATUS",
-	"BUSANDSTATUS", "INPUTDATA", "RESETPARINT"
-};
+// static const char* const regNamesR[]={
+// 	"CURSCSIDATA","INITIATORCMD", "MODE", "TARGETCMD", "CURSCSISTATUS",
+// 	"BUSANDSTATUS", "INPUTDATA", "RESETPARINT"
+// };
 
-static const char* const regNamesW[]={
-	"OUTDATA","INITIATORCMD", "MODE", "TARGETCMD", "SELECTENA",
-	"STARTDMASEND", "STARTDMATARRECV", "STARTDMAINITRECV"
-};
+// static const char* const regNamesW[]={
+// 	"OUTDATA","INITIATORCMD", "MODE", "TARGETCMD", "SELECTENA",
+// 	"STARTDMASEND", "STARTDMATARRECV", "STARTDMAINITRECV"
+// };
 
 
 typedef struct {
@@ -87,28 +87,28 @@ typedef struct {
 #define ST_SELDONE 4
 #define ST_DATA 5
 
-static const char* const stateNames[]={
-	"IDLE", "ARB", "ARBDONE", "SELECT", "SELDONE", "DATA"
-};
+// static const char* const stateNames[]={
+// 	"IDLE", "ARB", "ARBDONE", "SELECT", "SELDONE", "DATA"
+// };
 
 static Ncr ncr;
 
 static void parseScsiCmd(int isRead) {
 	uint8_t *buf=ncr.data.cmd;
 	int cmd=buf[0];
-	int lba, len, ctrl;
+	int lba, len; //, ctrl;
 	int group=(cmd>>5);
 	if (group==0) { //6-byte command
 		lba=buf[3]|(buf[2]<<8)|((buf[1]&0x1F)<<16);
 		len=buf[4];
 		if (len==0) len=256;
-		ctrl=buf[5];
+		// ctrl=buf[5];
 //		for (int x=0; x<6; x++) printf("%02X ", buf[x]);
 //		printf("\n");
 	} else if (group==1 || group==2) { //10-byte command
 		lba=buf[5]|(buf[4]<<8)|(buf[3]<<16)|(buf[2]<<24);
 		len=buf[8]|(buf[7]<<8);
-		ctrl=buf[9];
+		// ctrl=buf[9];
 //		for (int x=0; x<10; x++) printf("%02X ", buf[x]);
 //		printf("\n");
 	} else {
@@ -122,7 +122,7 @@ static void parseScsiCmd(int isRead) {
 }
 
 unsigned int ncrRead(unsigned int addr, unsigned int dack) {
-	unsigned int pc=m68k_get_reg(NULL, M68K_REG_PC);
+	// unsigned int pc=m68k_get_reg(NULL, M68K_REG_PC);
 	unsigned int ret=0;
 	if (ncr.mode&MODE_DMA && dack) {
 		if (ncr.tcr&TCR_IO) {
@@ -178,14 +178,14 @@ unsigned int ncrRead(unsigned int addr, unsigned int dack) {
 	} else if (addr==7) {
 		printf("Scsi: !UNIMPLEMENTED! (addr 7)\n");
 	}
-//	printf("%08X SCSI: (dack %d), cur st %s read %s (reg %d) = %x \n", 
+//	printf("%08X SCSI: (dack %d), cur st %s read %s (reg %d) = %x \n",
 //		pc, dack,  stateNames[ncr.state], regNamesR[addr], addr, ret);
 	return ret;
 }
 
 
 void ncrWrite(unsigned int addr, unsigned int dack, unsigned int val) {
-	unsigned int pc=m68k_get_reg(NULL, M68K_REG_PC);
+	// unsigned int pc=m68k_get_reg(NULL, M68K_REG_PC);
 
 	if (addr==0) {
 		if (ncr.mode&MODE_DMA && dack) {

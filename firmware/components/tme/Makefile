@@ -14,7 +14,7 @@ OBJ :=	$(MUSASHI_GEN_SRC:%.c=%.o) \
 		emu.o \
 		iwm.o \
 		via.o \
-		rtc.o \
+		macrtc.o \
 		ncr.o \
 		scc.o \
 		mouse.o \
@@ -30,6 +30,8 @@ LDLIBS += -lm -lSDL2 -lstdc++
 CFLAGS += -I. -I./musashi -I../../.pio/build/minimac/config -Og -ggdb -DHOSTBUILD
 
 all: $(TARGET)
+
+autogen: $(MUSASHI_OP_PREGEN_SRC)
 
 $(TARGET): $(OBJ)
 

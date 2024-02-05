@@ -19,7 +19,7 @@
 #include "snd.h"
 #include "disp.h"
 #include "emu.h"
-#include "rtc.h"
+#include "macrtc.h"
 
 static void *loadRom(char *file) {
 	int i;
@@ -43,8 +43,8 @@ void saveRtcMem(char *data) {
 }
 
 int main(int argc, char **argv) {
-	if (argc != 2) {
-		printf("Usage: %s rom_file.bin hdd_file.bin\n", argv[0]);
+	if (argc != 3) {
+		printf("Usage: %s rom.bin hdd.img\n", argv[0]);
 		return -1;
 	}
 
@@ -58,5 +58,5 @@ int main(int argc, char **argv) {
 		printf("Loaded RTC data from pram.dat\n");
 	}
 	sdlDispAudioInit();
-	tmeStartEmu(rom, argv[2]);
+	tmeStartEmu(rom);
 }

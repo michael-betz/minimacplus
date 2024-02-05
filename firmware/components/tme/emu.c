@@ -22,17 +22,21 @@
 #include "iwm.h"
 #include "via.h"
 #include "scc.h"
-#include "rtc.h"
+#include "macrtc.h"
 #include "ncr.h"
 #include "hd.h"
 #include "snd.h"
 #include "mouse.h"
 #include <stdbool.h>
 // #include "esp_heap_caps.h"
-#include <byteswap.h>
 // #include "esp_spiram.h"
 #include "network/localtalk.h"
 
+#ifdef HOSTBUILD
+	#include <byteswap.h>
+#else
+	#include "my_byteswap.h"
+#endif
 
 unsigned char *macRom;
 
@@ -480,7 +484,7 @@ void printFps() {
 	oldtv.tv_usec=tv.tv_usec;
 }
 
-void tmeStartEmu(void *rom, char *hdName) {
+void tmeStartEmu(void *rom) {
 	int ca1=0, ca2=0;
 	int x, frame=0;
 	int cyclesPerSec=0;
@@ -489,9 +493,7 @@ void tmeStartEmu(void *rom, char *hdName) {
 	rom_remap=1;
 	regenMemmap(1);
 	printf("Creating HD and registering it...\n");
-	if (hdName == NULL)
-		hdName = "hd.img";
-	SCSIDevice *hd=hdCreate(hdName);
+	SCSIDevice *hd=hdCreate();
 	ncrRegisterDevice(6, hd);
 	viaClear(VIA_PORTA, 0x7F);
 	viaSet(VIA_PORTA, 0x80);

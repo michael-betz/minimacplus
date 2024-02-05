@@ -1,9 +1,9 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 #include <stdio.h>
@@ -13,7 +13,7 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
-#include <driver/i2s.h>
+#include "driver/i2s.h"
 
 static QueueHandle_t soundQueue;
 
@@ -52,7 +52,7 @@ void sndTask(void *arg) {
 			rp++;
 			if (rp>=BUFLEN) rp=0;
 		}
-		i2s_write_bytes(0, (char*)tmpb, sizeof(tmpb), portMAX_DELAY);
+		i2s_write(0, (char*)tmpb, sizeof(tmpb), NULL, portMAX_DELAY);
 //		printf("snd %d\n", rp);
 	}
 }
@@ -106,7 +106,7 @@ void sndInit() {
 	gpio_config(&io_conf_amp);
 
 
-#if 1
+#if 0
 	//I2S enables *both* DAC channels; we only need DAC2. DAC1 is connected to the select button.
 	CLEAR_PERI_REG_MASK(RTC_IO_PAD_DAC1_REG, RTC_IO_PDAC1_DAC_XPD_FORCE_M);
 	CLEAR_PERI_REG_MASK(RTC_IO_PAD_DAC1_REG, RTC_IO_PDAC1_XPD_DAC_M);

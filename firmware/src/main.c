@@ -1,12 +1,14 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 #include "esp_attr.h"
+
+#include "spi_flash_mmap.h"
 
 #include "rom/cache.h"
 #include "rom/ets_sys.h"
@@ -29,7 +31,7 @@
 
 #include "emu.h"
 #include "tmeconfig.h"
-#include "rtc.h"
+#include "macrtc.h"
 
 unsigned char *romdata;
 nvs_handle nvs;
@@ -47,10 +49,8 @@ void saveRtcMem(char *data) {
 	}
 }
 
-
 void app_main()
 {
-	int i;
 	const esp_partition_t* part;
 	spi_flash_mmap_handle_t hrom;
 	esp_err_t err;

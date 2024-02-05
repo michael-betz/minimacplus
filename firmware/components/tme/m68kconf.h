@@ -188,7 +188,11 @@ void m68k_instruction();
 /* ======================================================================== */
 
 
-#include <byteswap.h>
+#ifdef HOSTBUILD
+	#include <byteswap.h>
+#else
+	#include "my_byteswap.h"
+#endif
 #include <stdint.h>
 
 extern unsigned char *m68k_pcbase;

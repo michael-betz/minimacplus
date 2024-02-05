@@ -2,9 +2,9 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 #include <stdio.h>
@@ -71,7 +71,8 @@ static int hdScsiCmd(SCSITransferData *data, unsigned int cmd, unsigned int len,
 	return ret;
 }
 
-SCSIDevice *hdCreate(char *file) {
+SCSIDevice *hdCreate() {
+	const char* file = "hd.img";
 	SCSIDevice *ret=malloc(sizeof(SCSIDevice));
 	memset(ret, 0, sizeof(SCSIDevice));
 	HdPriv *hd=malloc(sizeof(HdPriv));

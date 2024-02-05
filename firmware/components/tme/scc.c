@@ -1,9 +1,9 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 #include <stdio.h>
@@ -116,10 +116,10 @@ static int rxByte(int chan, int *bytesLeftInBuf) {
 	return ret;
 }
 
-static int rxBytesLeft(int chan) {
-	if (scc.chan[chan].rx[scc.chan[chan].rxBufCur].delay!=0) return 0;
-	return scc.chan[chan].rx[scc.chan[chan].rxBufCur].len-scc.chan[chan].rxPos;
-}
+// static int rxBytesLeft(int chan) {
+// 	if (scc.chan[chan].rx[scc.chan[chan].rxBufCur].delay!=0) return 0;
+// 	return scc.chan[chan].rx[scc.chan[chan].rxBufCur].len-scc.chan[chan].rxPos;
+// }
 
 static int rxBufTick(int chan, int noTicks) {
 	if (scc.chan[chan].rx[scc.chan[chan].rxBufCur].delay > 0) {
@@ -162,47 +162,47 @@ static int rxBufTick(int chan, int noTicks) {
 #define SCC_R0_EOM (1<<6)
 #define SCC_R0_BREAKABRT (1<<7)
 
-static void explainWrite(int reg, int chan, int val) {
-	const static char *cmdLo[]={"null", "point_high", "reset_ext_status_int", "send_ABORT", 
-			"ena_int_on_next_char", "reset_tx_pending", "error_reset", "reset_highest_ius"};
-	const static char *cmdHi[]={"null", "reset_rx_crc", "reset_tx_crc", "reset_tx_underrun_EOM_latch"};
-	const static char *intEna[]={"RxIntDisabled", "RxInt1stCharOrSpecial", "RxIntAllCharOrSpecial", "RxIntSpecial"};
-	const static char *rstDesc[]={"NoReset", "ResetChB", "ResetChA", "HwReset"};
-	if (reg==0) {
-		if (((val&0xF8)!=0) && ((val&0xF8)!=0x08)) {
-			printf("Write reg 0; CmdHi=%s CmdLo=%s\n", cmdHi[(val>>6)&3], cmdLo[(val>>3)&7]);
-		}
-	} else if (reg==1) {
-		printf("Write reg 1 for chan %d: ", chan);
-		if (val&0x80) printf("WaitDmaReqEn ");
-		if (val&0x40) printf("WaitDmaReqFn ");
-		if (val&0x20) printf("WaitDmaOnRxTx ");
-		if (val&0x04) printf("ParityIsSpecial ");
-		if (val&0x02) printf("TxIntEna ");
-		if (val&0x01) printf("RxIntEna ");
-		printf("%s\n", intEna[(val>>3)&3]);
-	} else if (reg==9) {
-		printf("Write reg 9: cmd=%s ", rstDesc[(val>>6)&3]);
-		if (val&0x01) printf("VIS ");
-		if (val&0x02) printf("NV ");
-		if (val&0x04) printf("DLC ");
-		if (val&0x08) printf("MIE ");
-		if (val&0x10) printf("StatusHi ");
-		if (val&0x20) printf("RESVD ");
-		printf("\n");
-	} else if (reg==15) {
-		printf("Write reg 15: ");
-		if (val&0x02) printf("ZeroCountIE ");
-		if (val&0x08) printf("DcdIE ");
-		if (val&0x10) printf("SyncHuntIE ");
-		if (val&0x20) printf("CtsIE ");
-		if (val&0x40) printf("TxUnderrunIE ");
-		if (val&0x80) printf("BreakAbortIE ");
-		printf("\n");
-	} else {
-		printf("Write chan %d reg %d val 0x%02X\n", chan, reg, val);
-	}
-}
+// static void explainWrite(int reg, int chan, int val) {
+// 	const static char *cmdLo[]={"null", "point_high", "reset_ext_status_int", "send_ABORT",
+// 			"ena_int_on_next_char", "reset_tx_pending", "error_reset", "reset_highest_ius"};
+// 	const static char *cmdHi[]={"null", "reset_rx_crc", "reset_tx_crc", "reset_tx_underrun_EOM_latch"};
+// 	const static char *intEna[]={"RxIntDisabled", "RxInt1stCharOrSpecial", "RxIntAllCharOrSpecial", "RxIntSpecial"};
+// 	const static char *rstDesc[]={"NoReset", "ResetChB", "ResetChA", "HwReset"};
+// 	if (reg==0) {
+// 		if (((val&0xF8)!=0) && ((val&0xF8)!=0x08)) {
+// 			printf("Write reg 0; CmdHi=%s CmdLo=%s\n", cmdHi[(val>>6)&3], cmdLo[(val>>3)&7]);
+// 		}
+// 	} else if (reg==1) {
+// 		printf("Write reg 1 for chan %d: ", chan);
+// 		if (val&0x80) printf("WaitDmaReqEn ");
+// 		if (val&0x40) printf("WaitDmaReqFn ");
+// 		if (val&0x20) printf("WaitDmaOnRxTx ");
+// 		if (val&0x04) printf("ParityIsSpecial ");
+// 		if (val&0x02) printf("TxIntEna ");
+// 		if (val&0x01) printf("RxIntEna ");
+// 		printf("%s\n", intEna[(val>>3)&3]);
+// 	} else if (reg==9) {
+// 		printf("Write reg 9: cmd=%s ", rstDesc[(val>>6)&3]);
+// 		if (val&0x01) printf("VIS ");
+// 		if (val&0x02) printf("NV ");
+// 		if (val&0x04) printf("DLC ");
+// 		if (val&0x08) printf("MIE ");
+// 		if (val&0x10) printf("StatusHi ");
+// 		if (val&0x20) printf("RESVD ");
+// 		printf("\n");
+// 	} else if (reg==15) {
+// 		printf("Write reg 15: ");
+// 		if (val&0x02) printf("ZeroCountIE ");
+// 		if (val&0x08) printf("DcdIE ");
+// 		if (val&0x10) printf("SyncHuntIE ");
+// 		if (val&0x20) printf("CtsIE ");
+// 		if (val&0x40) printf("TxUnderrunIE ");
+// 		if (val&0x80) printf("BreakAbortIE ");
+// 		printf("\n");
+// 	} else {
+// 		printf("Write chan %d reg %d val 0x%02X\n", chan, reg, val);
+// 	}
+// }
 
 void explainRead(int reg, int chan, int val) {
 	const static char *intRsn[]={
@@ -228,10 +228,10 @@ void explainRead(int reg, int chan, int val) {
 	}
 }
 
-//Raises an interrupt if needed, specifically when intpending indicates so. Need to 
+//Raises an interrupt if needed, specifically when intpending indicates so. Need to
 //change intpending beforehand.
 static void raiseInt(int chan) {
-	const char *desc[]={"CHB_EXT", "CHB_TX", "CHB_RX", "CHA_EXT", "CHA_TX", "CHA_RX"};
+	// const char *desc[]={"CHB_EXT", "CHB_TX", "CHB_RX", "CHA_EXT", "CHA_TX", "CHA_RX"};
 	if ((scc.chan[chan].wr1&1) ){ //&& (scc.intpending&(~scc.intpendingOld))) {
 		scc.intpendingOld=scc.intpending;
 #ifdef SCC_DBG
@@ -335,7 +335,7 @@ static void checkRxIntPending(int chan) {
 	int doInt=0;
 	int rxIntMode=(scc.chan[chan].wr1>>3)&0x3;
 #ifdef SCC_DBG
-	printf("Int check: chan %d rx has byte %d, int mode %d, intOnNextRxChar: %d\n", 
+	printf("Int check: chan %d rx has byte %d, int mode %d, intOnNextRxChar: %d\n",
 			chan, rxHasByte(chan), rxIntMode, scc.chan[chan].intOnNextRxChar);
 #endif
 	if (scc.chan[chan].intOnNextRxChar && rxHasByte(chan)) {
@@ -345,7 +345,7 @@ static void checkRxIntPending(int chan) {
 	if (rxIntMode>=1) {
 		//special condition int... we handle only eof here
 		if (rxHasByte(chan) && scc.chan[chan].rxEom) doInt=1;
-	} 
+	}
 	if (rxIntMode==1) {
 		//int on 1st char
 		if (rxHasByte(chan) && scc.chan[chan].rxPos==0) doInt=1;

@@ -49,10 +49,10 @@ typedef struct {
 
 static Via via;
 
-static const char* const viaRegNames[]={
-	"ORB", "ORA", "DDRB", "DDRA", "T1C-L", "T1C-H", "T1L-L", "T1L-H", "T2L-L",
-	"T2C-H", "SR", "ACR", "PCR", "IFR", "IER", "ORA-NC"
-};
+// static const char* const viaRegNames[]={
+// 	"ORB", "ORA", "DDRB", "DDRA", "T1C-L", "T1C-H", "T1L-L", "T1L-H", "T2L-L",
+// 	"T2C-H", "SR", "ACR", "PCR", "IFR", "IER", "ORA-NC"
+// };
 
 
 void viaSet(int no, int mask) {
@@ -65,7 +65,7 @@ void viaClear(int no, int mask) {
 
 
 static void viaCheckIrq() {
-	static int oldmint=0;
+	// static int oldmint=0;
 	int mint=(via.ifr&via.ier)&0x7F;
 	if (mint) {
 		via.ifr|=IFR_IRQ;
@@ -123,7 +123,7 @@ static int pcrFor(int no) {
 //Clears CB1/CA1 bits in IFR
 static void accessPort(int no) {
 	via.ifr&=~(no?IFR_CB1:IFR_CA1);
-	int pcrca2=pcrFor(no?VIA_CB2:VIA_CA2);
+	// int pcrca2=pcrFor(no?VIA_CB2:VIA_CA2);
 //	if (pcrca2==PCR_NEG || pcrca2==PCR_POS) {
 		via.ifr&=~(no?IFR_CB2:IFR_CA2);
 //	}
@@ -145,7 +145,7 @@ void viaControlWrite(int no, int val) {
 }
 
 void viaWrite(unsigned int addr, unsigned int val) {
-	unsigned int pc=m68k_get_reg(NULL, M68K_REG_PC);
+	// unsigned int pc=m68k_get_reg(NULL, M68K_REG_PC);
 	if (addr==0x0) {
 		//ORB
 		viaCbPortBWrite(val);
@@ -224,7 +224,7 @@ void viaWrite(unsigned int addr, unsigned int val) {
 
 
 unsigned int viaRead(unsigned int addr) {
-	unsigned int pc=m68k_get_reg(NULL, M68K_REG_PC);
+	// unsigned int pc=m68k_get_reg(NULL, M68K_REG_PC);
 	unsigned int val=0;
 	if (addr==0x0) {
 		//ORB

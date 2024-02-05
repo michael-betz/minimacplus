@@ -1,21 +1,22 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "driver/spi_master.h"
 #include "soc/gpio_struct.h"
 #include "driver/gpio.h"
-#include "esp_heap_alloc_caps.h"
+#include "esp_heap_caps.h"
 #include "mouse.h"
 #include "adns9500.h"
 
@@ -163,7 +164,7 @@ SemaphoreHandle_t dispSem = NULL;
 
 static void initLcd() {
 	mipiInit();
-	vTaskDelay(20/portTICK_RATE_MS); //give screen a sec
+	vTaskDelay(20 / portTICK_PERIOD_MS); //give screen a sec
 	for (int j=0; j<2; j++) { //Init multiple times; for mysterious reasons it sometimes doesn't catch first time.
 		for (int i=0; initPackets[i].type!=0; i++) {
 			mipiResync();
@@ -175,7 +176,8 @@ static void initLcd() {
 			} else {
 				uint8_t data[2]={initPackets[i].addr, initPackets[i].data[0]};
 				mipiDsiSendShort(initPackets[i].type, data, initPackets[i].len+1);
-				if (initPackets[i].type==5) vTaskDelay(300/portTICK_RATE_MS);
+				if (initPackets[i].type==5)
+					vTaskDelay(300 / portTICK_PERIOD_MS);
 			}
 		}
 
@@ -218,7 +220,6 @@ static void IRAM_ATTR displayTask(void *arg) {
 	uint8_t *img=malloc((LINESPERBUF*320*2)+1);
 	assert(img);
 	calcLut();
-	uint8_t cmd[5];
 	uint8_t *oldImg=malloc(512*342/8);
 
 	int firstrun=1;
@@ -229,9 +230,8 @@ static void IRAM_ATTR displayTask(void *arg) {
 		xSemaphoreTake(dispSem, portMAX_DELAY);
 		uint8_t *myData=(uint8_t*)currFbPtr;
 
-		int xstart, xend, ystart, yend;
+		int ystart, yend;
 		if (!firstrun) {
-			xstart=0; xend=320;
 			for (ystart=0; ystart<342; ystart++) {
 				if (memcmp(oldImg+64*ystart, myData+64*ystart, 64)!=0) break;
 			}
@@ -251,7 +251,6 @@ static void IRAM_ATTR displayTask(void *arg) {
 				printf("Changed %d to %d\n", ystart, yend);
 			}
 		} else {
-			xstart=0; xend=320;
 			ystart=0; yend=320;
 		}
 		memcpy(oldImg, myData, 512*342/8);

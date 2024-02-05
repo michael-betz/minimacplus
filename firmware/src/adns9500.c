@@ -1,9 +1,9 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 #include <stdio.h>
@@ -12,10 +12,11 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
+#include "esp_heap_caps.h"
 #include "driver/spi_master.h"
-#include "soc/gpio_struct.h"
 #include "driver/gpio.h"
-#include "esp_heap_alloc_caps.h"
+#include "soc/gpio_struct.h"
+#include "rom/ets_sys.h"
 
 #define ADNS_MOSI 19
 #define ADNS_MISO 34ULL
@@ -58,39 +59,37 @@ static int adnsRead(int adr) {
 }
 
 int adns9500_init() {
-	volatile int delay;
-	int t;
-	gpio_config_t gpioconf[2]={
+	gpio_config_t gpioconf[2] = {
 		{
-			.pin_bit_mask=(1<<ADNS_MOSI)|(1<<ADNS_CS)|(1<<ADNS_CLK), 
-			.mode=GPIO_MODE_OUTPUT, 
-			.pull_up_en=GPIO_PULLUP_DISABLE, 
-			.pull_down_en=GPIO_PULLDOWN_DISABLE, 
-			.intr_type=GPIO_PIN_INTR_DISABLE
-		},{
-			.pin_bit_mask=(1ULL<<ADNS_MISO), 
-			.mode=GPIO_MODE_INPUT, 
-//			.pull_up_en=GPIO_PULLUP_ENABLE, 
-//			.pull_down_en=GPIO_PULLDOWN_DISABLE, 
-			.intr_type=GPIO_PIN_INTR_DISABLE
+			.pin_bit_mask=(1<<ADNS_MOSI)|(1<<ADNS_CS)|(1<<ADNS_CLK),
+			.mode=GPIO_MODE_OUTPUT,
+			.pull_up_en=GPIO_PULLUP_DISABLE,
+			.pull_down_en=GPIO_PULLDOWN_DISABLE,
+			.intr_type=GPIO_INTR_DISABLE
+		}, {
+			.pin_bit_mask=(1ULL<<ADNS_MISO),
+			.mode=GPIO_MODE_INPUT,
+//			.pull_up_en=GPIO_PULLUP_ENABLE,
+//			.pull_down_en=GPIO_PULLDOWN_DISABLE,
+			.intr_type=GPIO_INTR_DISABLE
 		}
 	};
 	gpio_config(&gpioconf[0]);
 	gpio_config(&gpioconf[1]);
-	
+
 	int tout=5;
 	int r;
 	do {
 		adnsWrite(0,0);
-		adnsWrite(0x3A,0x5a); //Power-Up Reset
-		vTaskDelay(50/portTICK_RATE_MS);
+		adnsWrite(0x3A, 0x5a);  //Power-Up Reset
+		vTaskDelay(50 / portTICK_PERIOD_MS);
 		adnsRead(0x2);
 		adnsRead(0x3);
 		adnsRead(0x4);
 		adnsRead(0x5);
 		adnsRead(0x6);
 
-		r=adnsRead(0);
+		r = adnsRead(0);
 		printf("ADNS: Read %X\n", r);
 		tout--;
 	} while (r!=0x33 && tout!=0);
