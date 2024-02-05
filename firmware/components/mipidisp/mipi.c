@@ -1,9 +1,9 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 /*
@@ -139,12 +139,12 @@ void mipiResync() {
 	gpio_set_level(GPIO_FF_NRST, 0);
 	ets_delay_us(1);
 	gpio_set_level(GPIO_FF_NRST, 1);
-	
+
 	//Clock is in LP11 now. We should go LP01, LP00 to enable HS receivers
 	gpio_set_level(GPIO_CLKP_LS, 0);
 	SOTEOTWAIT();
 	gpio_set_level(GPIO_CLKN_LS, 0);
-	
+
 	cur_idle_desc=0;
 	idle_dmadesc[0].qe.stqe_next=&idle_dmadesc[0];
 	//Set SPI to transfer contents of idle dmadesc
@@ -179,7 +179,7 @@ void mipiInit() {
 		.quadhd_io_num=-1,
 		.max_transfer_sz=4096*3
 	};
-	
+
 	gpio_config_t io_conf={
 		.intr_type=GPIO_INTR_DISABLE,
 		.mode=GPIO_MODE_OUTPUT,
@@ -193,7 +193,7 @@ void mipiInit() {
 	assert(ret==ESP_OK);
 	assert(spicommon_dma_chan_claim(DMACH));
 	spidev=spicommon_hw_for_host(HOST);
-	
+
 	//Set up idle dma desc
 	uint8_t *idle_mem=pvPortMallocCaps(64, MALLOC_CAP_DMA);
 	memset(idle_mem, 0, 64);
@@ -217,7 +217,7 @@ void mipiInit() {
 	//Reset timing
 	spidev->ctrl2.val=0;
 	spi_set_clock(spidev, 80000000, 40000000, 128);
-	
+
 	//Configure SPI host
 	spidev->ctrl.rd_bit_order=1; //LSB first
 	spidev->ctrl.wr_bit_order=1;
@@ -226,7 +226,7 @@ void mipiInit() {
 	spidev->ctrl2.miso_delay_mode=0;
 	spidev->ctrl.val &= ~(SPI_FREAD_DUAL|SPI_FREAD_QUAD|SPI_FREAD_DIO|SPI_FREAD_QIO);
 	spidev->user.val &= ~(SPI_FWRITE_DUAL|SPI_FWRITE_QUAD|SPI_FWRITE_DIO|SPI_FWRITE_QIO);
-	
+
 	//Disable unneeded ints
 	spidev->slave.val=0;
 	spidev->dma_int_ena.val=0;
@@ -234,7 +234,7 @@ void mipiInit() {
 	spidev->dma_int_clr.val=0xFFFFFFFF; //clear all ints
 	spidev->dma_int_ena.out_eof=1;
 //	spidev->dma_int_ena.in_suc_eof=1;
-	
+
 	//Init GPIO to MIPI idle levels
 	gpio_set_level(GPIO_D0N_LS, 1);
 	gpio_set_level(GPIO_D0P_LS, 1);
