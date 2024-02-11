@@ -42,8 +42,8 @@ Thing to emulate single-lane MIPI using a flipflop and a bunch of resistors.
 #define DMACH 2
 #define DESCCNT 8
 
-#define SOTEOTWAIT() asm volatile("nop; nop; nop; nop")
-//#define SOTEOTWAIT() ets_delay_us(10);
+// #define SOTEOTWAIT() asm volatile("nop; nop; nop; nop")
+#define SOTEOTWAIT() ets_delay_us(10);
 
 static spi_dev_t *spidev;
 static int cur_idle_desc=0;
@@ -133,7 +133,7 @@ void mipiResync() {
 
 	//Stop DMA transfer
 	spidev->dma_conf.dma_tx_stop=1;
-	while (spidev->ext2.val!=0) ;
+	while (spidev->ext2.val!=0);
 
 	//Clear flipflop
 	gpio_set_level(GPIO_FF_NRST, 0);
@@ -161,8 +161,8 @@ void mipiResync() {
 	spidev->user.usr_mosi=1;
 
 /* HACK for inverted clock */
-//	spidev->user.usr_addr=1;
-//	spidev->user1.usr_addr_bitlen=0; //1 addr bit
+	// spidev->user.usr_addr=1;
+	// spidev->user1.usr_addr_bitlen=0; //1 addr bit
 /* End hack */
 
 	spidev->cmd.usr=1;
@@ -194,6 +194,10 @@ void mipiInit() {
 	assert(spicommon_dma_chan_claim(DMACH));
 	spidev=spicommon_hw_for_host(HOST);
 
+	// Invert SPI clock output to flip-flop (shift MIPI clock phase by 90 deg)
+	// gpio_matrix_out(GPIO_FF_CLK, 0x100, false, false);
+	// gpio_matrix_out(GPIO_FF_CLK, HSPICLK_OUT_IDX, true, false);
+
 	//Set up idle dma desc
 	uint8_t *idle_mem=pvPortMallocCaps(64, MALLOC_CAP_DMA);
 	memset(idle_mem, 0, 64);
@@ -216,13 +220,13 @@ void mipiInit() {
 	spidev->dma_conf.val&=~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
 	//Reset timing
 	spidev->ctrl2.val=0;
-	spi_set_clock(spidev, 80000000, 40000000, 128);
+	spi_set_clock(spidev, 80000000, 20000000, 128);
 
 	//Configure SPI host
 	spidev->ctrl.rd_bit_order=1; //LSB first
 	spidev->ctrl.wr_bit_order=1;
 	spidev->pin.ck_idle_edge=0;
-	spidev->user.ck_out_edge=1; //0 for <40MHz?
+	spidev->user.ck_out_edge=0; // add 1 to shift MIPI clock phase by 90 deg
 	spidev->ctrl2.miso_delay_mode=0;
 	spidev->ctrl.val &= ~(SPI_FREAD_DUAL|SPI_FREAD_QUAD|SPI_FREAD_DIO|SPI_FREAD_QIO);
 	spidev->user.val &= ~(SPI_FWRITE_DUAL|SPI_FWRITE_QUAD|SPI_FWRITE_DIO|SPI_FWRITE_QIO);
@@ -250,8 +254,7 @@ void mipiInit() {
 
 	sem=xSemaphoreCreateBinary();
 //	xSemaphoreGive(sem);
-	mipiResync(0);
-
+	mipiResync();
 }
 
 void mipiSendMultiple(uint8_t **data, int *lengths, int count) {
