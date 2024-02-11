@@ -195,6 +195,9 @@ void mipiInit() {
 	assert(spicommon_periph_claim(HOST, "xxx"));
 	ret=spicommon_bus_initialize_io(HOST, &buscfg, SPICOMMON_BUSFLAG_MASTER, NULL);
 	assert(ret==ESP_OK);
+
+    ret = spicommon_dma_chan_alloc(HOST, DMACH, NULL, NULL);
+
 	// assert(spicommon_dma_chan_claim(DMACH));
 	// spidev=spicommon_hw_for_host(HOST);
 

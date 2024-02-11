@@ -1,11 +1,12 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
+#include <stdio.h>
 #include "mouse.h"
 
 typedef struct {
@@ -51,6 +52,6 @@ int mouseTick() {
 	ret=quad[mouse.rpx&3];
 	ret|=quad[mouse.rpy&3]<<2;
 	ret|=mouse.btn<<4;
-//	printf("dx %d dy %d ret %x\n", mouse.dx, mouse.dy, ret);
+	// printf("dx %d dy %d ret %x\n", mouse.dx, mouse.dy, ret);
 	return ret;
 }

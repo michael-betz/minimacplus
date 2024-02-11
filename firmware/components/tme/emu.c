@@ -41,10 +41,11 @@
 unsigned char *macRom;
 
 #if (TME_CACHESIZE!=0)
-#define USE_EXTERNAL_RAM 1
+	#define USE_EXTERNAL_RAM 1
 #else
 #define USE_EXTERNAL_RAM 0
-unsigned char *macRam;
+	unsigned char *macRam;
+	#warning "using macRam[]";
 #endif
 
 #define MEMADDR_DUMMY_CACHE (void*)1
@@ -338,6 +339,7 @@ static void ramInit() {
 #if CONFIG_SPIRAM_USE_MEMMAP
 	macRam=(void*)0x3F800000;
 #else
+	#warning "Using malloc(TME_RAMSIZE)"
 	macRam=malloc(TME_RAMSIZE);
 #endif
 	assert(macRam);
@@ -530,7 +532,7 @@ void tmeStartEmu(void *rom) {
 		cyclesPerSec+=x;
 		dispDraw(macFb[video_remap?1:0]);
 		sndPush(macSnd[audio_remap?1:0], audio_en?audio_volume:0);
-//		localtalkTick();
+		localtalkTick();
 		frame++;
 		ca1^=1;
 		viaControlWrite(VIA_CA1, ca1);

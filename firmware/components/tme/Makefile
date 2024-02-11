@@ -27,7 +27,7 @@ OBJ :=	$(MUSASHI_GEN_SRC:%.c=%.o) \
 # 		musashi/m68kdasm.o
 
 LDLIBS += -lm -lSDL2 -lstdc++
-CFLAGS += -I. -I./musashi -I../../.pio/build/minimac/config -Og -ggdb -DHOSTBUILD
+CFLAGS += -I. -I./musashi -I../../.pio/build/minimac/config -g -DHOSTBUILD
 
 all: $(TARGET)
 

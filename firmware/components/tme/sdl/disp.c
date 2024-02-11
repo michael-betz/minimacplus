@@ -24,15 +24,16 @@ void sdlDie() {
 	exit(0);
 }
 
-
 void dispInit() {
+	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
+	SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "1");
+
 	win=SDL_CreateWindow( "TME", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_RESIZABLE);
 	if (win == 0)
 		sdlDie();
 
 	drwsurf = SDL_CreateRGBSurfaceWithFormat(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, SDL_PIXELFORMAT_RGBA32);
-
-	// SDL_SetRelativeMouseMode(1);
+	SDL_SetRelativeMouseMode(1);
 }
 
 void sdlDispAudioInit() {
@@ -40,22 +41,26 @@ void sdlDispAudioInit() {
 		sdlDie();
 }
 
+
 void handleInput() {
 	static int btn=0;
-	static int oldx, oldy;
 	SDL_Event ev;
 	while(SDL_PollEvent(&ev)) {
-		if (ev.type == SDL_QUIT ) {
-			exit(0);
-		}
-		if (ev.type==SDL_MOUSEMOTION || ev.type==SDL_MOUSEBUTTONDOWN || ev.type==SDL_MOUSEBUTTONUP) {
-			int x, y;
-			SDL_GetMouseState(&x, &y);
-			if (ev.type==SDL_MOUSEBUTTONDOWN) btn=1;
-			if (ev.type==SDL_MOUSEBUTTONUP) btn=0;
-			mouseMove(x-oldx, y-oldy, btn);
-			oldx=x;
-			oldy=y;
+		switch (ev.type) {
+			case SDL_QUIT:
+				exit(0);
+				break;
+			case SDL_MOUSEMOTION:
+				mouseMove(ev.motion.xrel, ev.motion.yrel, btn);
+				break;
+			case SDL_MOUSEBUTTONUP:
+				btn = 0;
+				mouseMove(0, 0, btn);
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				btn = 1;
+				mouseMove(0, 0, btn);
+				break;
 		}
 	}
 }

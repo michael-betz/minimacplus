@@ -27,6 +27,7 @@ static void *loadRom(char *file) {
 	int f=open(file, O_RDONLY);
 	i=read(f, ret, TME_ROMSIZE);
 	if (i!=TME_ROMSIZE) {
+		printf("couldn't read %s\n", file);
 		perror("reading rom");
 		exit(-1);
 	}
@@ -43,14 +44,11 @@ void saveRtcMem(char *data) {
 }
 
 int main(int argc, char **argv) {
-	if (argc != 3) {
-		printf("Usage: %s rom.bin hdd.img\n", argv[0]);
-		return -1;
-	}
+	printf("Need rom.bin and hdd.img to work\n");
 
-	void *rom=loadRom(argv[1]);
+	void *rom=loadRom("rom.bin");
 	FILE *f=fopen("pram.dat", "r");
-	if (f!=NULL) {
+	if (f=NULL) {
 		char data[32];
 		fread(data, 32, 1, f);
 		rtcInit(data);

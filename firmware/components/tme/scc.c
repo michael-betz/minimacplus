@@ -21,7 +21,7 @@ Emulation of the Zilog 8530 SCC.
 Supports basic mouse pins plus hacked in LocalTalk
 */
 
-//#define SCC_DBG
+// #define SCC_DBG
 
 
 #define exit_when_strict(er) exit(1)
@@ -85,25 +85,47 @@ static void triggerRx(int chan);
 
 
 static int rxHasByte(int chan) {
-	return (scc.chan[chan].rx[scc.chan[chan].rxBufCur].delay==0)?1:0;
+	int curbuf=scc.chan[chan].rxBufCur;
+	if (curbuf < 0 || curbuf >= NO_RXBUF) {
+		printf("ERROR rxHasByte(%d) rxBufCur: %04x\n", chan, curbuf);
+		assert(0);
+	}
+	return (scc.chan[chan].rx[curbuf].delay==0)?1:0;
 }
 
 
 static void rxBufIgnoreRest(int chan) {
-	if (scc.chan[chan].rxPos==0) return; //already at new buff
+	if (scc.chan[chan].rxPos==0)
+		return; //already at new buff
+	int curbuf=scc.chan[chan].rxBufCur;
+	if (curbuf < 0 || curbuf >= NO_RXBUF) {
+		printf("ERROR rxBufIgnoreRest(%d) rxBufCur: %04x\n", chan, curbuf);
+		assert(0);
+	}
 	scc.chan[chan].rx[scc.chan[chan].rxBufCur].delay=-1;
 	scc.chan[chan].rxBufCur++;
 #ifdef SCC_DBG
 	printf("RxBuff: Skipping to next buff %d, which has delay %d.\n",
 			scc.chan[chan].rxBufCur, scc.chan[chan].rx[scc.chan[chan].rxBufCur].delay);
 #endif
-	if (scc.chan[chan].rxBufCur>=NO_RXBUF) scc.chan[chan].rxBufCur=0;
+	if (scc.chan[chan].rxBufCur < 0 || scc.chan[chan].rxBufCur>=NO_RXBUF)
+		scc.chan[chan].rxBufCur=0;
 	scc.chan[chan].rxPos=0;
+	curbuf=scc.chan[chan].rxBufCur;
+	if (curbuf < 0 || curbuf >= NO_RXBUF) {
+		printf("ERROR rxBufIgnoreRest2(%d) rxBufCur: %04x\n", chan, curbuf);
+		assert(0);
+	}
+
 }
 
 static int rxByte(int chan, int *bytesLeftInBuf) {
 	int ret;
 	int curbuf=scc.chan[chan].rxBufCur;
+	if (curbuf < 0 || curbuf >= NO_RXBUF) {
+		printf("ERROR rxByte(%d): %04x\n", chan, curbuf);
+		assert(0);
+	}
 #ifdef SCC_DBG
 	printf("RxBuf: bufid %d byte %d/%d\n", curbuf, scc.chan[chan].rxPos, scc.chan[chan].rx[curbuf].len);
 #endif
@@ -122,12 +144,16 @@ static int rxByte(int chan, int *bytesLeftInBuf) {
 // }
 
 static int rxBufTick(int chan, int noTicks) {
-	if (scc.chan[chan].rx[scc.chan[chan].rxBufCur].delay > 0) {
-		scc.chan[chan].rx[scc.chan[chan].rxBufCur].delay-=noTicks;
-		if (scc.chan[chan].rx[scc.chan[chan].rxBufCur].delay<=0) {
-			scc.chan[chan].rx[scc.chan[chan].rxBufCur].delay=0;
+	unsigned curbuf = (unsigned)scc.chan[chan].rxBufCur;
+	if (curbuf >= NO_RXBUF) {
+		printf("XXX\n");
+	}
+	if (scc.chan[chan].rx[curbuf].delay > 0) {
+		scc.chan[chan].rx[curbuf].delay-=noTicks;
+		if (scc.chan[chan].rx[curbuf].delay<=0) {
+			scc.chan[chan].rx[curbuf].delay=0;
 #ifdef SCC_DBG
-			printf("Feeding buffer %d into SCC\n", scc.chan[chan].rxBufCur);
+			printf("Feeding buffer %d into SCC\n", curbuf);
 #endif
 			return 1;
 		}
@@ -162,47 +188,47 @@ static int rxBufTick(int chan, int noTicks) {
 #define SCC_R0_EOM (1<<6)
 #define SCC_R0_BREAKABRT (1<<7)
 
-// static void explainWrite(int reg, int chan, int val) {
-// 	const static char *cmdLo[]={"null", "point_high", "reset_ext_status_int", "send_ABORT",
-// 			"ena_int_on_next_char", "reset_tx_pending", "error_reset", "reset_highest_ius"};
-// 	const static char *cmdHi[]={"null", "reset_rx_crc", "reset_tx_crc", "reset_tx_underrun_EOM_latch"};
-// 	const static char *intEna[]={"RxIntDisabled", "RxInt1stCharOrSpecial", "RxIntAllCharOrSpecial", "RxIntSpecial"};
-// 	const static char *rstDesc[]={"NoReset", "ResetChB", "ResetChA", "HwReset"};
-// 	if (reg==0) {
-// 		if (((val&0xF8)!=0) && ((val&0xF8)!=0x08)) {
-// 			printf("Write reg 0; CmdHi=%s CmdLo=%s\n", cmdHi[(val>>6)&3], cmdLo[(val>>3)&7]);
-// 		}
-// 	} else if (reg==1) {
-// 		printf("Write reg 1 for chan %d: ", chan);
-// 		if (val&0x80) printf("WaitDmaReqEn ");
-// 		if (val&0x40) printf("WaitDmaReqFn ");
-// 		if (val&0x20) printf("WaitDmaOnRxTx ");
-// 		if (val&0x04) printf("ParityIsSpecial ");
-// 		if (val&0x02) printf("TxIntEna ");
-// 		if (val&0x01) printf("RxIntEna ");
-// 		printf("%s\n", intEna[(val>>3)&3]);
-// 	} else if (reg==9) {
-// 		printf("Write reg 9: cmd=%s ", rstDesc[(val>>6)&3]);
-// 		if (val&0x01) printf("VIS ");
-// 		if (val&0x02) printf("NV ");
-// 		if (val&0x04) printf("DLC ");
-// 		if (val&0x08) printf("MIE ");
-// 		if (val&0x10) printf("StatusHi ");
-// 		if (val&0x20) printf("RESVD ");
-// 		printf("\n");
-// 	} else if (reg==15) {
-// 		printf("Write reg 15: ");
-// 		if (val&0x02) printf("ZeroCountIE ");
-// 		if (val&0x08) printf("DcdIE ");
-// 		if (val&0x10) printf("SyncHuntIE ");
-// 		if (val&0x20) printf("CtsIE ");
-// 		if (val&0x40) printf("TxUnderrunIE ");
-// 		if (val&0x80) printf("BreakAbortIE ");
-// 		printf("\n");
-// 	} else {
-// 		printf("Write chan %d reg %d val 0x%02X\n", chan, reg, val);
-// 	}
-// }
+static void explainWrite(int reg, int chan, int val) {
+	const static char *cmdLo[]={"null", "point_high", "reset_ext_status_int", "send_ABORT",
+			"ena_int_on_next_char", "reset_tx_pending", "error_reset", "reset_highest_ius"};
+	const static char *cmdHi[]={"null", "reset_rx_crc", "reset_tx_crc", "reset_tx_underrun_EOM_latch"};
+	const static char *intEna[]={"RxIntDisabled", "RxInt1stCharOrSpecial", "RxIntAllCharOrSpecial", "RxIntSpecial"};
+	const static char *rstDesc[]={"NoReset", "ResetChB", "ResetChA", "HwReset"};
+	if (reg==0) {
+		if (((val&0xF8)!=0) && ((val&0xF8)!=0x08)) {
+			printf("Write reg 0; CmdHi=%s CmdLo=%s\n", cmdHi[(val>>6)&3], cmdLo[(val>>3)&7]);
+		}
+	} else if (reg==1) {
+		printf("Write reg 1 for chan %d: ", chan);
+		if (val&0x80) printf("WaitDmaReqEn ");
+		if (val&0x40) printf("WaitDmaReqFn ");
+		if (val&0x20) printf("WaitDmaOnRxTx ");
+		if (val&0x04) printf("ParityIsSpecial ");
+		if (val&0x02) printf("TxIntEna ");
+		if (val&0x01) printf("RxIntEna ");
+		printf("%s\n", intEna[(val>>3)&3]);
+	} else if (reg==9) {
+		printf("Write reg 9: cmd=%s ", rstDesc[(val>>6)&3]);
+		if (val&0x01) printf("VIS ");
+		if (val&0x02) printf("NV ");
+		if (val&0x04) printf("DLC ");
+		if (val&0x08) printf("MIE ");
+		if (val&0x10) printf("StatusHi ");
+		if (val&0x20) printf("RESVD ");
+		printf("\n");
+	} else if (reg==15) {
+		printf("Write reg 15: ");
+		if (val&0x02) printf("ZeroCountIE ");
+		if (val&0x08) printf("DcdIE ");
+		if (val&0x10) printf("SyncHuntIE ");
+		if (val&0x20) printf("CtsIE ");
+		if (val&0x40) printf("TxUnderrunIE ");
+		if (val&0x80) printf("BreakAbortIE ");
+		printf("\n");
+	} else {
+		printf("Write chan %d reg %d val 0x%02X\n", chan, reg, val);
+	}
+}
 
 void explainRead(int reg, int chan, int val) {
 	const static char *intRsn[]={
@@ -231,13 +257,14 @@ void explainRead(int reg, int chan, int val) {
 //Raises an interrupt if needed, specifically when intpending indicates so. Need to
 //change intpending beforehand.
 static void raiseInt(int chan) {
-	// const char *desc[]={"CHB_EXT", "CHB_TX", "CHB_RX", "CHA_EXT", "CHA_TX", "CHA_RX"};
+	const char *desc[]={"CHB_EXT", "CHB_TX", "CHB_RX", "CHA_EXT", "CHA_TX", "CHA_RX"};
 	if ((scc.chan[chan].wr1&1) ){ //&& (scc.intpending&(~scc.intpendingOld))) {
 		scc.intpendingOld=scc.intpending;
 #ifdef SCC_DBG
 		printf("SCC int, pending %x: ", scc.intpending);
 		for (int i=0; i<6; i++) {
-			if (scc.intpending&(1<<i)) printf("%s ", desc[i]);
+			if (scc.intpending&(1<<i))
+				printf("%s ", desc[i]);
 		}
 		printf("\n");
 #endif
@@ -256,7 +283,8 @@ static int calcRr0(int chan) {
 	if (scc.chan[chan].hunting) val|=SCC_R0_SYNCHUNT;
 	if (scc.chan[chan].cts) val|=SCC_R0_CTS;
 	if (scc.chan[chan].txTimer==0) val|=SCC_R0_EOM;
-	if (scc.chan[chan].rxAbrtTimer>0 && scc.chan[chan].rxAbrtTimer<20)  val|=SCC_R0_BREAKABRT; //abort
+	if (scc.chan[chan].rxAbrtTimer>0 && scc.chan[chan].rxAbrtTimer<20)
+		val|=SCC_R0_BREAKABRT; //abort
 	//if (rxBytesLeft(chan)==1) val|=SCC_R0_BREAKABRT; //abort
 	//if (scc.chan[chan].rxEom) val|=SCC_R0_BREAKABRT; //abort
 	return val;

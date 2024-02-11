@@ -3,9 +3,9 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 #include <stdio.h>
@@ -177,10 +177,10 @@ void ethertalkTick() {
 //	hexdump(buff, r);
 	elap_packet_t *elap=(elap_packet_t*)&buff;
 	if (memcmp(elap->src, myMac, 6)==0) return; //ignore own packets
-	
+
 	printf("\n\nETHERTALK PACKET FROM BASILISKIF (%d bytes)\n", r);
 	print_elap(elap, r);
-	
+
 	//Try to sniff network ID if needed
 	if (otherNet==0 && (memcmp(elap->src, myMac, 6)!=0)) {
 		if (memcmp(elap->snap_proto, snap_aarp, 5)==0) {
@@ -193,7 +193,7 @@ void ethertalkTick() {
 		myNet=otherNet; //because... dunno, doesn't work otherwise.
 		memcpy(otherMac, elap->src, 6);
 	}
-	
+
 	if (memcmp(elap->snap_proto, snap_aarp, 5)==0) {
 		aarp_packet_t *aarp=(aarp_packet_t*)elap->data;
 		if (ntohs(aarp->function)==AARP_FN_RESPONSE) {

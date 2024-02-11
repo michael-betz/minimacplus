@@ -276,10 +276,8 @@ void ncrWrite(unsigned int addr, unsigned int dack, unsigned int val) {
 		ncr.tcr=val&0xf;
 	} else if (addr==4) {
 		if (val!=0) printf("!UNIMPLEMENTED! selenable (val %x), todo\n", val);
-	} else if (addr==5) {
-		printf("!UNIMPLEMENTED!\n");
-	} else if (addr==6) {
-		printf("!UNIMPLEMENTED!\n");
+	} else if (addr==5 || addr==6) {
+		printf("!NCR UNIMPLEMENTED! addr: %02x, dac: %02x, val: %02x\n", addr, dack, val);
 	} else if (addr==7) {
 		//Start DMA. We already do this using the mode bit.
 	}
