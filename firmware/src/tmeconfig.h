@@ -3,7 +3,7 @@
 // for the RMA, on host-build we will use malloc()
 // on the esp we will use malloc_caps()
 
-#define TME_ROMSIZE (256*1024)
+#define TME_ROMSIZE (128 * 1024)
 
 // Emulate an 4MiB MacPlus
 #define TME_CACHESIZE (96*1024)
@@ -13,7 +13,7 @@
 #define TME_SNDBUF 0x3FFD00
 
 // Source: Guide to the Macintosh family hardware
-#define TME_SNDBUF_ALT (TME_SNDBUF-0x5C00)
+#define TME_SNDBUF_ALT (TME_SNDBUF - 0x5C00)
 
 // Skip the RAM test on boot
 #define TME_DISABLE_MEMTEST 1

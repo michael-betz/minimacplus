@@ -28,7 +28,7 @@
 
 #if DO_RESCALE
 	// Floating-point number, actually x/32. Divide mac reso by this to get lcd reso.
-	#define SCALE_FACT 51
+	#define SCALE_FACT 42  // 51
 #else
 	#define SCALE_FACT 32
 #endif

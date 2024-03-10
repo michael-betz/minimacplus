@@ -7,6 +7,8 @@
  * ----------------------------------------------------------------------------
  */
 #include <sys/time.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "esp_attr.h"
 
@@ -22,18 +24,20 @@
 #include "soc/io_mux_reg.h"
 #include "soc/efuse_reg.h"
 #include "soc/rtc_cntl_reg.h"
-#include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include <stdlib.h>
 #include "esp_err.h"
 #include "nvs_flash.h"
 #include "nvs.h"
 #include "esp_partition.h"
+#include "esp_spiffs.h"
 
 #include "emu.h"
 #include "tmeconfig.h"
 #include "macrtc.h"
+#include "wifi.h"
+#include "static_ws.h"
+#include "json_settings.h"
 
 unsigned char *romdata;
 nvs_handle nvs;
@@ -57,6 +61,19 @@ void app_main()
 	esp_err_t err;
 	uint8_t pram[32];
 
+	// Mount spiffs for *.html and defaults.json
+	esp_vfs_spiffs_conf_t conf = {
+		.base_path = "/spiffs",
+		.partition_label = NULL,
+		.max_files = 4,
+		.format_if_mount_failed = true
+	};
+	esp_vfs_spiffs_register(&conf);
+
+	// Load settings.json from SPIFFS, try to create file if it doesn't exist
+	set_settings_file("/spiffs/settings.json", "/spiffs/default_settings.json");
+
+	// load 32 bytes of PRAM from NVS
 	nvs_flash_init();
 	err = nvs_open("pram", NVS_READWRITE, &nvs);
 	if (err != ESP_OK) {
@@ -92,6 +109,9 @@ void app_main()
 
 	printf("Starting emu...\n");
 	xTaskCreatePinnedToCore(&emuTask, "emu", 6*1024, NULL, 5, NULL, 0);
+
+	// initWifi();
+	// tryConnect();
 }
 
 // called every second by emu.c
