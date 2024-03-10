@@ -1,9 +1,9 @@
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain
+ * this notice you can do whatever you want with this stuff. If we meet some day,
+ * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
 #include <stdint.h>
@@ -24,9 +24,12 @@ void rtcTick() {
 	int x;
 	for (x=0; x<3; x++) {
 		rtc.mem[x]++;
-		if (rtc.mem[x]!=0) break;
+		if (rtc.mem[x] != 0)
+			break;
 	}
-	for (int i=0; i<4; i++) rtc.mem[i+4]=rtc.mem[i]; //undocumented; mac needs it tho'.
+	// undocumented; mac needs it tho'.
+	for (int i=0; i<4; i++)
+		rtc.mem[i + 4] = rtc.mem[i];
 }
 
 extern void saveRtcMem(char *mem);

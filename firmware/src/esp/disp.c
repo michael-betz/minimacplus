@@ -163,7 +163,7 @@ static void IRAM_ATTR displayTask(void *arg) {
 				yend = (yend * 32) / SCALE_FACT + 2;
 				if (ystart < 0)
 					ystart = 0;
-				printf("Changed %d to %d\n", ystart, yend);
+				// printf("disp: updating lines %d to %d\n", ystart, yend);
 			}
 		} else {
 			ystart=0; yend=320;

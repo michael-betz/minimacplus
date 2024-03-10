@@ -37,12 +37,13 @@ static void *loadRom(char *file) {
 }
 
 void saveRtcMem(char *data) {
-	printf("Saving RTC mem...\n");
-	FILE *f=fopen("pram.dat", "wb");
-	if (f!=NULL) {
-		fwrite(data, 32, 1, f);
-		fclose(f);
+	FILE *f = fopen("pram.dat", "wb");
+	if (f == NULL) {
+		printf("Error saving RTC-mem to pram.dat\n");
+		return;
 	}
+	fwrite(data, 32, 1, f);
+	fclose(f);
 }
 
 //Should be called every second.
@@ -62,7 +63,6 @@ void printFps(unsigned cycles) {
 	oldtv.tv_sec=tv.tv_sec;
 	oldtv.tv_usec=tv.tv_usec;
 }
-
 
 int main(int argc, char **argv) {
 	printf("Need rom.bin and hdd.img to work\n");

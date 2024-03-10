@@ -201,6 +201,7 @@ static void ramInit() {
 		macRam = malloc(TME_RAMSIZE);
 	#else
 		// for some reason, esp-idf only provides 0x3efff4 / 0x400000 bytes for malloc
+		// found the reason: canary bytes for heap debugging
 		printf("Using PSRAM through mapped memory as Mac RAM\n");
 		macRam = (void*)0x3F800000;
 	#endif
@@ -327,7 +328,7 @@ void tmeStartEmu(void *rom) {
 	m68k_pc_changed_handler_function(0x0);
 	m68k_init();
 
-	printf("Setting CPU type and resetting...");
+	printf("Setting CPU type and resetting...\n");
 	m68k_set_cpu_type(M68K_CPU_TYPE_68000);
 	m68k_pulse_reset();
 
@@ -376,7 +377,7 @@ void tmeStartEmu(void *rom) {
 			viaControlWrite(VIA_CA2, ca2);
 			rtcTick();
 			frame=0;
-			printFps(cyclesPerSec);
+			// printFps(cyclesPerSec);
 			cyclesPerSec=0;
 		}
 	}
@@ -391,7 +392,6 @@ void sccIrq(int req) {
 //	printf("IRQ %d\n", req);
 	m68k_set_irq(req?2:0);
 }
-
 
 void viaCbPortAWrite(unsigned int val) {
 	static int writes=0;
