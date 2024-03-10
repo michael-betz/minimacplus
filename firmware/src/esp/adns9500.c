@@ -18,6 +18,8 @@
 #include "soc/gpio_struct.h"
 #include "rom/ets_sys.h"
 
+#include "mouse.h"
+
 #define ADNS_MOSI 19
 #define ADNS_MISO 34ULL
 #define ADNS_CLK 23
@@ -58,7 +60,7 @@ static int adnsRead(int adr) {
 	return out&0xff;
 }
 
-int adns9500_init() {
+static int adns9500_init() {
 	gpio_config_t gpioconf[2] = {
 		{
 			.pin_bit_mask=(1<<ADNS_MOSI)|(1<<ADNS_CS)|(1<<ADNS_CLK),
@@ -100,7 +102,7 @@ int adns9500_init() {
 	return 1;
 }
 
-void adns900_get_dxdybtn(int *x, int *y, int *btn) {
+static void adns900_get_dxdybtn(int *x, int *y, int *btn) {
 	int16_t sx, sy;
 	sx=adnsRead(0x3);
 	sx|=adnsRead(0x4)<<8;
@@ -111,4 +113,34 @@ void adns900_get_dxdybtn(int *x, int *y, int *btn) {
 //	if (sx!=0 || sy!=0) printf("Mouse: %hd %hd %d\n", sx, sy, *btn);
 	*x=sx;
 	*y=sy;
+}
+
+
+static bool is_mouse_found = false;
+
+// Below are functions which will be called by the emulator
+
+void mouse_init()
+{
+	is_mouse_found = adns9500_init();
+	if (!is_mouse_found)
+		printf("mouse_init(): adns9500 not found!\n");
+	else
+		printf("mouse_init(): success!\n");
+}
+
+void mouse_read()
+{
+	if (!is_mouse_found)
+		return;
+
+	int dx=0, dy=0, btn=0;
+
+	// Read mouse once per frame
+	adns900_get_dxdybtn(&dx, &dy, &btn);
+
+	// Mouse sensor is mounted upside-down in case. Invert coords.
+	mouseMove(-dx, -dy, btn);
+
+	// printf("Mouse: %d %d\n", dx, dy);
 }

@@ -26,9 +26,9 @@ int iwmLines, iwmModeReg, iwmHeadSel;
 
 void iwmAccess(unsigned int addr) {
 	if (addr&1) {
-		iwmLines|=(1<<(addr>>1));
+		iwmLines |= (1 << (addr >> 1));
 	} else {
-		iwmLines&=~(1<<(addr>>1));
+		iwmLines &= ~(1 << (addr >> 1));
 	}
 }
 
@@ -37,11 +37,11 @@ void iwmWrite(unsigned int addr, unsigned int val) {
 	int reg = iwmLines & (IWM_Q7 | IWM_Q6);
 	if (reg == 0xC0)
 		iwmModeReg = val;
-	printf("IWM write %x (iwm reg %x) val %x\n", addr, reg, val);
+	// printf("IWM write %x (iwm reg %x) val %x\n", addr, reg, val);
 }
 
 void iwmSetHeadSel(int s) {
-	iwmHeadSel=s;
+	iwmHeadSel = s;
 }
 
 unsigned int iwmRead(unsigned int addr) {
@@ -70,7 +70,7 @@ unsigned int iwmRead(unsigned int addr) {
 
 		val |= iwmModeReg & 0x1F;
 
-		printf("Read disk status %x\n", iwmLines);
+		// printf("Read disk status %x\n", iwmLines);
 	} else if (reg == IWM_Q7) {
 		// Read handshake register
 		val = 0xC0;
@@ -81,6 +81,6 @@ unsigned int iwmRead(unsigned int addr) {
 		val |= iwmModeReg & 0x1F;
 	}
 
-	printf("IWM read %x (iwm reg %x) val %x\n", addr, reg, val);
+	// printf("IWM read %x (iwm reg %x) val %x\n", addr, reg, val);
 	return val;
 }

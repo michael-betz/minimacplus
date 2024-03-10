@@ -94,7 +94,6 @@ void app_main()
 	xTaskCreatePinnedToCore(&emuTask, "emu", 6*1024, NULL, 5, NULL, 0);
 }
 
-
 // called every second by emu.c
 void printFps(unsigned cycles) {
 	struct timeval tv;

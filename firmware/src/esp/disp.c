@@ -17,8 +17,6 @@
 #include "soc/gpio_struct.h"
 #include "driver/gpio.h"
 #include "esp_heap_caps.h"
-#include "mouse.h"
-#include "adns9500.h"
 
 #include "mipi_dsi.h"
 #include "oled.h"
@@ -197,22 +195,16 @@ static void IRAM_ATTR displayTask(void *arg) {
 	}
 }
 
+// Functions below are called by the emulator task
+
 void dispDraw(uint8_t *mem) {
-	int dx, dy, btn;
 	currFbPtr = mem;
 	xSemaphoreGive(dispSem);
-	adns900_get_dxdybtn(&dx, &dy, &btn);
-	//Mouse sensor is mounted upside-down in case. Invert coords.
-	mouseMove(-dx, -dy, btn);
-//	printf("Mouse: %d %d\n", dx, dy);
 }
 
 void dispInit() {
 	mipiInit();
 	initOled();
-	int ret=adns9500_init();
-	if (!ret) printf("No mouse found!\n");
-
     dispSem = xSemaphoreCreateBinary();
 	xTaskCreatePinnedToCore(&displayTask, "display", 3000, NULL, 5, NULL, 1);
 }

@@ -34,8 +34,6 @@
 unsigned char *macRom;
 unsigned char *macRam;
 
-#define MEMADDR_DUMMY_CACHE (void*)1
-
 int rom_remap, video_remap=0, audio_remap=0, audio_volume=0, audio_en=0;
 
 void m68k_instruction() {
@@ -104,7 +102,6 @@ uint8_t viaAccessCb(unsigned int address, int data, int isWrite) {
 		return viaRead((address>>9)&0xf);
 	}
 }
-
 
 #define FLAG_RO (1 << 0)
 
@@ -330,6 +327,7 @@ void tmeStartEmu(void *rom) {
 	sndInit();
 	dispInit();
 	localtalkInit();
+	mouse_init();
 
 	// #if TME_DISABLE_MEMTEST
 	// 	printf("disabling startup memory test\n");
@@ -341,69 +339,77 @@ void tmeStartEmu(void *rom) {
 	while(1) {
 		for (x=0; x<8000000/60; x+=1000) {
 			m68k_execute(1000);
-			viaStep(100); //should run at 783.36KHz
+
+			// should run at 783.36KHz
+			viaStep(100);
 			sccTick(100);
 
-			int r=mouseTick();
-			if (r&MOUSE_BTN) viaClear(VIA_PORTB, (1<<3)); else viaSet(VIA_PORTB, (1<<3));
-			if (r&MOUSE_QXB) viaClear(VIA_PORTB, (1<<4)); else viaSet(VIA_PORTB, (1<<4));
-			if (r&MOUSE_QYB) viaClear(VIA_PORTB, (1<<5)); else viaSet(VIA_PORTB, (1<<5));
-			sccSetDcd(SCC_CHANA, r&MOUSE_QXA);
-			sccSetDcd(SCC_CHANB, r&MOUSE_QYA);
+			mouseTick();
 
 			//Sound handler keeps track of real time, if its buffer is empty we should be done with the video frame.
-			if (x>(8000000/120) && sndDone())
+			if (x > (8000000 / 120) && sndDone())
 				break;
 		}
-		cyclesPerSec+=x;
-		dispDraw(macFb[video_remap?1:0]);
-		sndPush(macSnd[audio_remap?1:0], audio_en?audio_volume:0);
+		cyclesPerSec += x;
+
+		// do these every frame
+		dispDraw(macFb[video_remap ? 1 : 0]);
+		mouse_read();
+		sndPush(macSnd[audio_remap ? 1 : 0], audio_en ? audio_volume : 0);
 		localtalkTick();
 		frame++;
-		ca1^=1;
+
+		ca1 ^= 1;
+
 		viaControlWrite(VIA_CA1, ca1);
-		if (frame==59) {
-			ca2^=1;
+
+		// every one second ...
+		if (frame == 59) {
+			ca2 ^= 1;
 			viaControlWrite(VIA_CA2, ca2);
 		}
-		if (frame>=60) {
-			ca2^=1;
+
+		if (frame >= 60) {
+			ca2 ^= 1;
 			viaControlWrite(VIA_CA2, ca2);
 			rtcTick();
 			frame=0;
 			// printFps(cyclesPerSec);
-			cyclesPerSec=0;
+			cyclesPerSec = 0;
 		}
 	}
 }
 
 void viaIrq(int req) {
-//	printf("IRQ %d\n", req);
-	m68k_set_irq(req?1:0);
+	// printf("IRQ %d\n", req);
+	m68k_set_irq(req ? 1 : 0);
 }
 
 void sccIrq(int req) {
-//	printf("IRQ %d\n", req);
-	m68k_set_irq(req?2:0);
+	// printf("IRQ %d\n", req);
+	m68k_set_irq(req ? 2 : 0);
 }
 
 void viaCbPortAWrite(unsigned int val) {
-	static int writes=0;
-	if ((writes++)==0) val=0x67;
-//	printf("VIA PORTA WRITE %x\n", val);
-	video_remap=(val&(1<<6))?1:0;
-	rom_remap=(val&(1<<4))?1:0;
-	audio_remap=(val&(1<<3))?1:0;
-	audio_volume=(val&7);
-	iwmSetHeadSel(val&(1<<5));
+	static int writes = 0;
+	if ((writes++) == 0)
+		val = 0x67;
+	// printf("VIA PORTA WRITE %x\n", val);
+	video_remap = (val & (1 << 6)) ? 1 : 0;
+	rom_remap = (val & (1 << 4)) ? 1 : 0;
+	audio_remap = (val & (1 << 3)) ? 1 : 0;
+	audio_volume = (val & 7);
+	iwmSetHeadSel(val & (1 << 5));
 	regenMemmap(rom_remap);
 }
 
 void viaCbPortBWrite(unsigned int val) {
-//	printf("VIA PORTB WRITE %x\n", val);
+	// printf("VIA PORTB WRITE %x\n", val);
 	int b;
-	b=rtcCom(val&4, val&1, val&2);
-	if (b) viaSet(VIA_PORTB, 1); else viaClear(VIA_PORTB, 1);
-	audio_en=!(val&(1<<7));
+	b = rtcCom(val & 4, val & 1, val & 2);
+	if (b)
+		viaSet(VIA_PORTB, 1);
+	else
+		viaClear(VIA_PORTB, 1);
+	audio_en = !(val & (1 << 7));
 }
-

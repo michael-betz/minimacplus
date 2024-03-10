@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #define SCC_CHANA 0
 #define SCC_CHANB 1
 

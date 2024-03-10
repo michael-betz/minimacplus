@@ -41,8 +41,10 @@ void sdlDispAudioInit() {
 		sdlDie();
 }
 
+void mouse_init() {}
 
-void handleInput() {
+// Called once per frame, handle mouse and other external events
+void mouse_read() {
 	static int btn=0;
 	SDL_Event ev;
 	while(SDL_PollEvent(&ev)) {
@@ -82,8 +84,5 @@ void dispDraw(uint8_t *mem) {
 	surf = SDL_GetWindowSurface(win);
 	SDL_BlitSurface(drwsurf, NULL, surf, NULL);
 	SDL_UpdateWindowSurface(win);
-
-	//Also handle mouse here.
-	handleInput();
 }
 

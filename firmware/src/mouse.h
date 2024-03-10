@@ -6,6 +6,10 @@
 #define MOUSE_QYB (1<<3)
 #define MOUSE_BTN (1<<4)
 
-
+// Generates emulated encoder waveform, drives VIA_PORTB
 void mouseMove(int dx, int dy, int btn);
-int mouseTick();
+void mouseTick();
+
+// Reads real mouse position from hardware. Calls mouseMove()
+void mouse_init();
+void mouse_read();
