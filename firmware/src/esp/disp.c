@@ -22,13 +22,13 @@
 #include "oled.h"
 
 //We need speed here!
-#pragma GCC optimize ("O2")
+#pragma GCC optimize ("O3")
 
 #define DO_RESCALE 1
 
 #if DO_RESCALE
 	// Floating-point number, actually x/32. Divide mac reso by this to get lcd reso.
-	#define SCALE_FACT 32 // 51
+	#define SCALE_FACT 51
 #else
 	#define SCALE_FACT 32
 #endif
@@ -106,8 +106,20 @@ static uint16_t IRAM_ATTR findPixelVal(uint8_t *data, int x, int y) {
 
 #else
 //Stupid 1-to-1 routine
-static uint16_t IRAM_ATTR findPixelVal(uint8_t *data, int x, int y) {
-	return (data[y * 64 + (x >> 3)] & (1 << ((7 - x) & 7))) ? 0 : 0xffff;
+static uint16_t IRAM_ATTR findPixelVal(uint8_t *data, unsigned x, unsigned y) {
+	// Something is quite wrong here :(
+	// data is the 512 x 342 x 1 bit image from the emulator
+	// x and y varies from 0 to 319
+	// return the color in RGB565 of the pixel at x, y
+
+	// going 8 pixels to the right means incrementing by one byte
+	// going 1 pixel down means incrementing by 512 / 8 = 64 bytes
+	uint8_t tmp = data[x / 8 + y * 64];
+
+	// to find the pixel we need to return the (x % 8)th bit
+	uint8_t mask = 1 << (7 - (x & 7));
+	return (tmp & mask) ? 0xffff : 0;
+	// return (data[y * 64 + (x >> 3)] & (1 << ((7 - x) & 7))) ? 0 : 0xffff;
 }
 
 #endif
@@ -134,7 +146,7 @@ static void IRAM_ATTR displayTask(void *arg) {
 	setColRange(0, 319);
 
 	while(1) {
-		mipiResync();
+		// mipiResync();
 
 		// Wait for emulator to release the display memory
 		xSemaphoreTake(dispSem, portMAX_DELAY);
