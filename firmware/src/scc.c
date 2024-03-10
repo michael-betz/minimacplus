@@ -23,7 +23,6 @@ Supports basic mouse pins plus hacked in LocalTalk
 
 // #define SCC_DBG
 
-
 #define exit_when_strict(er) exit(1)
 
 void sccIrq(int ena);

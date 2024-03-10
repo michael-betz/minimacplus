@@ -9,13 +9,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "emu.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <string.h>
+#include <stdbool.h>
+#include <byteswap.h>
+#include "emu.h"
 #include "tmeconfig.h"
 #include "m68k.h"
 #include "disp.h"
@@ -27,15 +29,7 @@
 #include "hd.h"
 #include "snd.h"
 #include "mouse.h"
-#include <stdbool.h>
 #include "localtalk.h"
-
-#ifdef HOSTBUILD
-	#include <byteswap.h>
-#else
-	#include "esp_heap_caps.h"
-	#include "my_byteswap.h"
-#endif
 
 unsigned char *macRom;
 unsigned char *macRam;
