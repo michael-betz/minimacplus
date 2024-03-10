@@ -14,3 +14,6 @@
 
 // Source: Guide to the Macintosh family hardware
 #define TME_SNDBUF_ALT (TME_SNDBUF-0x5C00)
+
+// Skip the RAM test on boot
+#define TME_DISABLE_MEMTEST 1

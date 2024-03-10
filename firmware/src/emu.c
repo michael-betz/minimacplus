@@ -112,7 +112,7 @@ uint8_t viaAccessCb(unsigned int address, int data, int isWrite) {
 }
 
 
-#define FLAG_RO (1<<0);
+#define FLAG_RO (1 << 0)
 
 typedef struct {
 	uint8_t *memAddr;
@@ -138,7 +138,7 @@ static void regenMemmap(int remapRom) {
 	//0-0x400000 is RAM, or ROM when remapped
 	if (remapRom) {
 		memmap[0].memAddr=macRom;
-		memmap[0].flags=FLAG_RO;
+		memmap[0].flags = FLAG_RO;
 		for (i=1; i<0x400000/MEMMAP_ES; i++) {
 			//Do not point at ROM again, but at... something else. Abuse RAM here.
 			//If pointed at ROM again, ROM will think this machine does not have SCSI.
@@ -148,13 +148,13 @@ static void regenMemmap(int remapRom) {
 	} else {
 		for (i=0; i<0x400000/MEMMAP_ES; i++) {
 			memmap[i].memAddr=&macRam[(i*MEMMAP_ES)&(TME_RAMSIZE-1)];
-			memmap[i].flags=0;
+			memmap[i].flags = 0;
 		}
 	}
 
 	//0x40000-0x50000 is ROM
 	memmap[0x400000/MEMMAP_ES].memAddr=macRom;
-	memmap[0x400000/MEMMAP_ES].flags=FLAG_RO;
+	memmap[0x400000/MEMMAP_ES].flags = FLAG_RO;
 	for (i=0x400000/MEMMAP_ES+1; i<0x500000/MEMMAP_ES; i++) {
 		//Again, point to crap or SCSI won't work.
 		memmap[i].memAddr=0;
@@ -170,7 +170,7 @@ static void regenMemmap(int remapRom) {
 	//0x600000-0x700000 is RAM
 	for (i=0x600000/MEMMAP_ES; i<0x700000/MEMMAP_ES; i++) {
 		memmap[i].memAddr=&macRam[(i*MEMMAP_ES)&(TME_RAMSIZE-1)];
-		memmap[i].flags=0;
+		memmap[i].flags = 0;
 	}
 
 	//0x800000-0xC00000 is SSC
@@ -193,7 +193,7 @@ static void regenMemmap(int remapRom) {
 
 uint8_t *macFb[2], *macSnd[2];
 
-#define MMAP_RAM_PTR(ent, addr) &ent->memAddr[addr&(MEMMAP_ES-1)]
+#define MMAP_RAM_PTR(ent, addr) &ent->memAddr[addr & (MEMMAP_ES - 1)]
 
 static void ramInit() {
 	#ifdef HOSTBUILD
@@ -230,11 +230,13 @@ unsigned int m68k_read_memory_8(unsigned int address) {
 }
 
 unsigned int m68k_read_memory_16(unsigned int address) {
-	const MemmapEnt *mmEnt=getMmmapEnt(address);
-	if ((address&1)!=0) printf("%s: Unaligned access to %x!\n", __FUNCTION__, address);
+	const MemmapEnt *mmEnt = getMmmapEnt(address);
+	if ((address & 1) != 0)
+		printf("%s: Unaligned access to %x!\n", __FUNCTION__, address);
+
 	if (mmEnt->memAddr) {
 		uint16_t *p;
-		p=(uint16_t*)MMAP_RAM_PTR(mmEnt, address);
+		p = (uint16_t*)MMAP_RAM_PTR(mmEnt, address);
 		return __bswap_16(*p);
 	} else {
 		unsigned int ret;
@@ -262,12 +264,18 @@ void m68k_write_memory_8(unsigned int address, unsigned int value) {
 }
 
 void m68k_write_memory_16(unsigned int address, unsigned int value) {
-	const MemmapEnt *mmEnt=getMmmapEnt(address);
-	if ((address&1)!=0) printf("%s: Unaligned access to %x!\n", __FUNCTION__, address);
+	const MemmapEnt *mmEnt = getMmmapEnt(address);
+	if ((address & 1) != 0)
+		printf("%s: Unaligned access to %x!\n", __FUNCTION__, address);
+
 	if (mmEnt->memAddr) {
+		if (mmEnt->flags & FLAG_RO) {
+			printf("%s: %x is read-only!\n", __FUNCTION__, address);
+			return;
+		}
 		uint16_t *p;
-		p=(uint16_t*)MMAP_RAM_PTR(mmEnt, address);
-		*p=__bswap_16(value);
+		p = (uint16_t*)MMAP_RAM_PTR(mmEnt, address);
+		*p = __bswap_16(value);
 	} else {
 		mmEnt->cb(address, (value>>8)&0xff, 1);
 		mmEnt->cb(address+1, (value>>0)&0xff, 1);
@@ -298,28 +306,42 @@ void tmeStartEmu(void *rom) {
 	int ca1=0, ca2=0;
 	int x, frame=0;
 	int cyclesPerSec=0;
-	macRom=rom;
+
+	macRom = rom;
 	ramInit();
-	rom_remap=1;
+
+	rom_remap = 1;
 	regenMemmap(1);
+
 	printf("Creating HD and registering it...\n");
 	SCSIDevice *hd = hdCreate();
 	ncrRegisterDevice(6, hd);
+
 	viaClear(VIA_PORTA, 0x7F);
 	viaSet(VIA_PORTA, 0x80);
 	viaClear(VIA_PORTA, 0xFF);
 	viaSet(VIA_PORTB, (1<<3));
 	sccInit();
+
 	printf("Initializing m68k...\n");
 	m68k_pc_changed_handler_function(0x0);
 	m68k_init();
+
 	printf("Setting CPU type and resetting...");
 	m68k_set_cpu_type(M68K_CPU_TYPE_68000);
 	m68k_pulse_reset();
-	printf("Display init...\n");
+
+	printf("Sound and display init...\n");
 	sndInit();
 	dispInit();
 	localtalkInit();
+
+	// #if TME_DISABLE_MEMTEST
+	// 	printf("disabling startup memory test\n");
+	// 	// doesn't work, tries to write to read-only ROM!
+	// 	m68k_write_memory_32(0x02ae, 0x00400000);
+	// #endif
+
 	printf("Done! Running.\n");
 	while(1) {
 		for (x=0; x<8000000/60; x+=1000) {
