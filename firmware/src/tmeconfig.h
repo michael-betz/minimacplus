@@ -3,8 +3,6 @@
 // for the RMA, on host-build we will use malloc()
 // on the esp we will use malloc_caps()
 
-#include <sdkconfig.h>
-
 #define TME_ROMSIZE (256*1024)
 
 // Emulate an 4MiB MacPlus

@@ -11,7 +11,7 @@
 #include "scc.h"
 #include "m68k.h"
 #include "hexdump.h"
-#include "network/localtalk.h"
+#include "localtalk.h"
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -257,10 +257,10 @@ void explainRead(int reg, int chan, int val) {
 //Raises an interrupt if needed, specifically when intpending indicates so. Need to
 //change intpending beforehand.
 static void raiseInt(int chan) {
-	const char *desc[]={"CHB_EXT", "CHB_TX", "CHB_RX", "CHA_EXT", "CHA_TX", "CHA_RX"};
 	if ((scc.chan[chan].wr1&1) ){ //&& (scc.intpending&(~scc.intpendingOld))) {
 		scc.intpendingOld=scc.intpending;
 #ifdef SCC_DBG
+		const char *desc[]={"CHB_EXT", "CHB_TX", "CHB_RX", "CHA_EXT", "CHA_TX", "CHA_RX"};
 		printf("SCC int, pending %x: ", scc.intpending);
 		for (int i=0; i<6; i++) {
 			if (scc.intpending&(1<<i))

@@ -42,7 +42,7 @@ static int hdScsiCmd(SCSITransferData *data, unsigned int cmd, unsigned int len,
 		fseek(hd->f, lba*512, SEEK_SET);
 		size_t r_ret = fread(data->data, 512, len, hd->f);
 		if (r_ret != len) {
-			printf("HD ERROR: Read %d blocks, got %d blocks.\n", len, r_ret);
+			printf("HD ERROR: Read %d blocks, got %ld blocks.\n", len, r_ret);
 			return 0;
 		}
 		ret=len*512;

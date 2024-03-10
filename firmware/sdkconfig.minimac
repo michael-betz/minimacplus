@@ -1654,13 +1654,6 @@ CONFIG_WIFI_PROV_AUTOSTOP_TIMEOUT=30
 CONFIG_WIFI_PROV_STA_ALL_CHANNEL_SCAN=y
 # CONFIG_WIFI_PROV_STA_FAST_SCAN is not set
 # end of Wi-Fi Provisioning Manager
-
-#
-# Tiny Mac Emulator options
-#
-CONFIG_TME_DISP_MIPI=y
-# CONFIG_TME_DISP_WROVER is not set
-# end of Tiny Mac Emulator options
 # end of Component config
 
 # CONFIG_IDF_EXPERIMENTAL_FEATURES is not set

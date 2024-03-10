@@ -6,6 +6,8 @@
  * and you think this stuff is worth it, you can buy me a beer in return.
  * ----------------------------------------------------------------------------
  */
+#include <sys/time.h>
+
 #include "esp_attr.h"
 
 #include "spi_flash_mmap.h"
@@ -80,3 +82,23 @@ void app_main()
 	xTaskCreatePinnedToCore(&emuTask, "emu", 6*1024, NULL, 5, NULL, 0);
 }
 
+
+// called every second by emu.c
+void printFps(unsigned cycles) {
+	struct timeval tv;
+	static struct timeval oldtv;
+	gettimeofday(&tv, NULL);
+	if (oldtv.tv_sec!=0) {
+		long msec=(tv.tv_sec-oldtv.tv_sec)*1000;
+		msec+=(tv.tv_usec-oldtv.tv_usec)/1000;
+		printf(
+			"cycles: %6d, speed: %3d%%, free: %3d kB_8, %3d kB_32\n",
+			cycles,
+			(int)(100000/msec),
+			heap_caps_get_free_size(MALLOC_CAP_8BIT) / 1024,
+			heap_caps_get_free_size(MALLOC_CAP_32BIT) / 1024
+		);
+	}
+	oldtv.tv_sec=tv.tv_sec;
+	oldtv.tv_usec=tv.tv_usec;
+}

@@ -1,11 +1,27 @@
-set(srcs "hd.c" "hexdump.c" "localtalk.c" "main.c" "snd.c")
+# Define the source files to compile
 
-if(CONFIG_TME_DISP_MIPI)
-    list(APPEND srcs "mipi_lcd.c" "adns9500.c")
-endif()
+FILE(GLOB SRCS *.c)
+FILE(GLOB SRCS_ESP esp/*.c)
+set(SRCS_AUTOGEN
+	musashi/m68kopac.c
+	musashi/m68kopdm.c
+	musashi/m68kopnz.c
+	musashi/m68kops_pre.c
+)
 
-if(CONFIG_TME_DISP_WROVER)
-    list(APPEND srcs "spi_lcd.c")
-endif()
+list(APPEND ALL_SRCS ${SRCS})
+list(APPEND ALL_SRCS ${SRCS_ESP})
+list(APPEND ALL_SRCS musashi/m68kcpu.c)
+list(APPEND ALL_SRCS ${SRCS_AUTOGEN})
 
-idf_component_register(SRCS ${srcs})
+idf_component_register(SRCS ${ALL_SRCS})
+
+# auto-generate source files for 68k CPU
+# ... doesn't work, will use script in platform.ini as a workaround
+
+# add_custom_command(OUTPUT ${SRCS_AUTOGEN}
+#     COMMAND make
+#     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/musashi
+# )
+# add_custom_target(autogen DEPENDS ${SRCS_AUTOGEN})
+# add_dependencies(app autogen)

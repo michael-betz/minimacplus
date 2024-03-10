@@ -28,7 +28,7 @@
 #include "snd.h"
 #include "mouse.h"
 #include <stdbool.h>
-#include "network/localtalk.h"
+#include "localtalk.h"
 
 #ifdef HOSTBUILD
 	#include <byteswap.h>
@@ -292,26 +292,6 @@ void m68k_pc_changed_handler_function(unsigned int address) {
 		printf("PC not in mem!\n");
 		abort();
 	}
-}
-
-//Should be called every second.
-void printFps(unsigned cycles) {
-	struct timeval tv;
-	static struct timeval oldtv;
-	gettimeofday(&tv, NULL);
-	if (oldtv.tv_sec!=0) {
-		long msec=(tv.tv_sec-oldtv.tv_sec)*1000;
-		msec+=(tv.tv_usec-oldtv.tv_usec)/1000;
-		printf(
-			"cycles: %6d, speed: %3d%%, free: %3d kB_8, %3d kB_32\n",
-			cycles,
-			(int)(100000/msec),
-			heap_caps_get_free_size(MALLOC_CAP_8BIT) / 1024,
-			heap_caps_get_free_size(MALLOC_CAP_32BIT) / 1024
-		);
-	}
-	oldtv.tv_sec=tv.tv_sec;
-	oldtv.tv_usec=tv.tv_usec;
 }
 
 void tmeStartEmu(void *rom) {
