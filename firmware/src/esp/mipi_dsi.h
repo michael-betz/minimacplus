@@ -1,2 +1,6 @@
-void mipiDsiSendLong(int type, uint8_t *data, int len);
-void mipiDsiSendShort(int type, uint8_t *data, int len);
+#pragma once
+
+void mipiInit(void);
+void mipiResync(void);
+void mipiDsiSendShort(uint8_t type, uint8_t *data, int len);
+void mipiDsiSendLong(uint8_t type, uint8_t cmd, uint8_t *data, int len);
