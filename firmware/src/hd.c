@@ -96,12 +96,17 @@ static int hdScsiCmd(SCSITransferData *data, unsigned int cmd, unsigned int len,
 }
 
 SCSIDevice *hdCreate() {
-	SCSIDevice *ret=malloc(sizeof(SCSIDevice));
+	SCSIDevice *ret = malloc(sizeof(SCSIDevice));
 	memset(ret, 0, sizeof(SCSIDevice));
-	HdPriv *hd=malloc(sizeof(HdPriv));
+	HdPriv *hd = malloc(sizeof(HdPriv));
 	memset(hd, 0, sizeof(HdPriv));
-	hd->part=esp_partition_find_first(0x40, 0x2, NULL);
-	if (hd->part==0) printf("Couldn't find HD part!\n");
+
+	// map partition from flash into memory
+	hd->part = esp_partition_find_first(ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY, "hd");
+	if (hd->part == NULL) {
+		printf("*** couldn't find partition %s\n", "hd");
+	}
+
 	hd->size=hd->part->size;
 	ret->arg=hd;
 	ret->scsiCmd=hdScsiCmd;

@@ -52,7 +52,8 @@ void sndTask(void *arg) {
 			rp++;
 			if (rp>=BUFLEN) rp=0;
 		}
-		i2s_write(0, (char*)tmpb, sizeof(tmpb), NULL, portMAX_DELAY);
+		unsigned n_written = 0;
+		i2s_write(I2S_NUM_0, (char*)tmpb, sizeof(tmpb), &n_written, portMAX_DELAY);
 //		printf("snd %d\n", rp);
 	}
 }
@@ -92,10 +93,10 @@ void sndInit() {
 		.dma_buf_count=8,
 		.dma_buf_len=1024/8
 	};
-	i2s_driver_install(0, &cfg, 4, &soundQueue);
-	i2s_set_pin(0, NULL);
+	i2s_driver_install(I2S_NUM_0, &cfg, 4, &soundQueue);
+	i2s_set_pin(I2S_NUM_0, NULL);
 	i2s_set_dac_mode(I2S_DAC_CHANNEL_LEFT_EN);
-	i2s_set_sample_rates(0, cfg.sample_rate);
+	i2s_set_sample_rates(I2S_NUM_0, cfg.sample_rate);
 
 	gpio_config_t io_conf_amp={
 		.intr_type=GPIO_INTR_DISABLE,

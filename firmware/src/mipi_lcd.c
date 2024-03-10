@@ -298,9 +298,5 @@ void dispInit() {
 	if (!ret) printf("No mouse found!\n");
 
     dispSem=xSemaphoreCreateBinary();
-#if CONFIG_FREERTOS_UNICORE
-	xTaskCreatePinnedToCore(&displayTask, "display", 3000, NULL, 5, NULL, 0);
-#else
 	xTaskCreatePinnedToCore(&displayTask, "display", 3000, NULL, 5, NULL, 1);
-#endif
 }

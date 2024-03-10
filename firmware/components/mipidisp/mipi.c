@@ -18,6 +18,7 @@ Thing to emulate single-lane MIPI using a flipflop and a bunch of resistors.
 #include "driver/spi_common.h"
 #include "driver/spi_master.h"
 #include "esp_private/spi_common_internal.h"
+#include "hal/spi_ll.h"
 #include "esp_system.h"
 #include "driver/spi_common.h"
 #include "soc/gpio_struct.h"
@@ -50,72 +51,11 @@ Thing to emulate single-lane MIPI using a flipflop and a bunch of resistors.
 #define SOTEOTWAIT() asm volatile("nop; nop; nop; nop")
 //#define SOTEOTWAIT() ets_delay_us(10);
 
-static spi_dev_t *spidev;
+static spi_dev_t *spidev = &SPI2;
 static int cur_idle_desc=0;
 static lldesc_t idle_dmadesc[3];
 static lldesc_t data_dmadesc[DESCCNT];
 static SemaphoreHandle_t sem=NULL;
-
-//ToDo: move these to spi_common...
-
-static int spi_freq_for_pre_n(int fapb, int pre, int n) {
-	return (fapb / (pre * n));
-}
-/*
- * Set the SPI clock to a certain frequency. Returns the effective frequency set, which may be slightly
- * different from the requested frequency.
- */
-static int spi_set_clock(spi_dev_t *hw, int fapb, int hz, int duty_cycle) {
-	int pre, n, h, l, eff_clk;
-
-	//In hw, n, h and l are 1-64, pre is 1-8K. Value written to register is one lower than used value.
-	if (hz>((fapb/4)*3)) {
-		//Using Fapb directly will give us the best result here.
-		hw->clock.clkcnt_l=0;
-		hw->clock.clkcnt_h=0;
-		hw->clock.clkcnt_n=0;
-		hw->clock.clkdiv_pre=0;
-		hw->clock.clk_equ_sysclk=1;
-		eff_clk=fapb;
-	} else {
-		//For best duty cycle resolution, we want n to be as close to 32 as possible, but
-		//we also need a pre/n combo that gets us as close as possible to the intended freq.
-		//To do this, we bruteforce n and calculate the best pre to go along with that.
-		//If there's a choice between pre/n combos that give the same result, use the one
-		//with the higher n.
-		int bestn=-1;
-		int bestpre=-1;
-		int besterr=0;
-		int errval;
-		for (n=2; n<=64; n++) { //Start at 2: we need to be able to set h/l so we have at least one high and one low pulse.
-			//Effectively, this does pre=round((fapb/n)/hz).
-			pre=((fapb/n)+(hz/2))/hz;
-			if (pre<=0) pre=1;
-			if (pre>8192) pre=8192;
-			errval=abs(spi_freq_for_pre_n(fapb, pre, n)-hz);
-			if (bestn==-1 || errval<=besterr) {
-				besterr=errval;
-				bestn=n;
-				bestpre=pre;
-			}
-		}
-
-		n=bestn;
-		pre=bestpre;
-		l=n;
-		//This effectively does round((duty_cycle*n)/256)
-		h=(duty_cycle*n+127)/256;
-		if (h<=0) h=1;
-
-		hw->clock.clk_equ_sysclk=0;
-		hw->clock.clkcnt_n=n-1;
-		hw->clock.clkdiv_pre=pre-1;
-		hw->clock.clkcnt_h=h-1;
-		hw->clock.clkcnt_l=l-1;
-		eff_clk=spi_freq_for_pre_n(fapb, pre, n);
-	}
-	return eff_clk;
-}
 
 static void spidma_intr(void *arg) {
 	BaseType_t xHigherPriorityTaskWoken=0;
@@ -174,7 +114,6 @@ void mipiResync() {
 }
 
 void mipiInit() {
-	esp_err_t ret;
 	spi_bus_config_t buscfg={
 		.miso_io_num=-1,
 		.mosi_io_num=GPIO_D0_HS,
@@ -192,11 +131,12 @@ void mipiInit() {
 	};
 	gpio_config(&io_conf);
 
-	assert(spicommon_periph_claim(HOST, "xxx"));
-	ret=spicommon_bus_initialize_io(HOST, &buscfg, SPICOMMON_BUSFLAG_MASTER, NULL);
-	assert(ret==ESP_OK);
+	assert(spicommon_periph_claim(HOST, "OLED"));
+	ESP_ERROR_CHECK(spicommon_bus_initialize_io(HOST, &buscfg, SPICOMMON_BUSFLAG_MASTER, NULL));
 
-    ret = spicommon_dma_chan_alloc(HOST, DMACH, NULL, NULL);
+	uint32_t d_rx = 0, d_tx = 0;
+	ESP_ERROR_CHECK(spicommon_dma_chan_alloc(HOST, DMACH, &d_tx, &d_rx));
+	assert(d_tx == DMACH);
 
 	// assert(spicommon_dma_chan_claim(DMACH));
 	// spidev=spicommon_hw_for_host(HOST);
@@ -217,13 +157,14 @@ void mipiInit() {
 	esp_intr_alloc(IRQSRC, 0, spidma_intr, NULL, NULL);
 
 	//Reset DMA
-	spidev->dma_conf.val|=SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
-	spidev->dma_out_link.start=0;
-	spidev->dma_in_link.start=0;
-	spidev->dma_conf.val&=~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
+	spidev->dma_conf.val |= SPI_OUT_RST | SPI_IN_RST | SPI_AHBM_RST | SPI_AHBM_FIFO_RST;
+	spidev->dma_out_link.start = 0;
+	spidev->dma_in_link.start = 0;
+	spidev->dma_conf.val &= ~(SPI_OUT_RST | SPI_IN_RST | SPI_AHBM_RST | SPI_AHBM_FIFO_RST);
+
 	//Reset timing
-	spidev->ctrl2.val=0;
-	spi_set_clock(spidev, 80000000, 40000000, 128);
+	spidev->ctrl2.val = 0;
+	spi_ll_master_set_clock(spidev, 80000000, 40000000, 128);
 
 	//Configure SPI host
 	spidev->ctrl.rd_bit_order=1; //LSB first
@@ -237,6 +178,7 @@ void mipiInit() {
 	//Disable unneeded ints
 	spidev->slave.val=0;
 	spidev->dma_int_ena.val=0;
+
 	//Set int on EOF
 	spidev->dma_int_clr.val=0xFFFFFFFF; //clear all ints
 	spidev->dma_int_ena.out_eof=1;
