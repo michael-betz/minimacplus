@@ -60,14 +60,14 @@ static int hdScsiCmd(SCSITransferData *data, unsigned int cmd, unsigned int len,
 		// hexdump(data->data, len * 512);
 		ret = len * 512;
 	} else if (cmd==0x0A || cmd==0x2A) { // write
-		printf("HD: Write %2d blocks   to LBA %5d. __IGNORED__\n", len, lba);
+		printf("HD: Write %2d blocks   to LBA %5d.\n", len, lba);
 		uint8_t *dp = data->data;
-		// while(len) {
-		// 	writeSector(hd, lba, dp);
-		// 	lba++;
-		// 	dp += 512;
-		// 	len--;
-		// }
+		while(len) {
+			writeSector(hd, lba, dp);
+			lba++;
+			dp += 512;
+			len--;
+		}
 		ret = 0;
 	} else if (cmd == 0x12) {  // inquiry
 		printf("HD: Inquery\n");
@@ -81,7 +81,7 @@ static int hdScsiCmd(SCSITransferData *data, unsigned int cmd, unsigned int len,
 		data->data[3]=(lbacnt>>0);
 		data->data[4]=0;
 		data->data[5]=0;
-		data->data[6]=2; //512
+		data->data[6]=2; // 512
 		data->data[7]=0;
 		ret=8;
 		printf("HD: Read capacity (%d)\n", lbacnt);
