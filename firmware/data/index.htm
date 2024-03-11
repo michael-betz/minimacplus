@@ -2,74 +2,42 @@
 <html>
 <meta charset="utf-8" />
 <head>
-  <title>esp32_crt</title>
+  <title>💻 Mini Mac Plus 💻</title>
   <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
 <div style="text-align: center;">
-  <!-- <h1>📺 esp32_crt 📺</h1> -->
-  <i>A small vector-based screen.</i>
+  <h1>💻 Mini Mac Plus 💻</h1>
+  <i>A Macintosh for ants.</i>
   <b>WS: <span id=connected_status>❌</span></b>
   <div>
-    <button onclick="tab('t_dds');">DDS</button>
+    <button onclick="tab('t_mouse');">MOUSE</button>
     <button onclick="window.location.href='settings.htm';">Settings</button>
   </div>
 </div>
-<div class="tab" id="t_dds"></div>
+<div class="tab" id="t_mouse">
+  <canvas
+    id="canvas"
+    width="300"
+    height="200"
+    style="border:solid white 1px; touch-action:none">
+    Your browser does not support canvas element.
+  </canvas>
+</div>
 </body>
 <script language="javascript" type="text/javascript">
   var websocket;
   var knobValues = {};
   var waveforms = 0;
 
-  function createDDSKnob(id_name, target_div) {
-    knobValues[id_name] = 0x12340000;
-    const tfi = document.createElement('input');
-    tfi.setAttribute('id', id_name);
-    tfi.value = "12340000";
-
-    tfi.addEventListener('change', e => {
-      val = parseInt(e.target.value, 16);
-      knobValues[id_name] = val
-      e.target.value = val.toString(16).padStart(8, '0');
-      sendDDS()
-    });
-
-    tfi.addEventListener('keydown', e => {
-      if (e.key == "ArrowDown")
-          var sign = -1;
-      else if (e.key == "ArrowUp")
-          var sign = 1;
-      else
-          return;
-      var start = e.target.selectionStart;
-      if (start >= 8)
-        start = 7;
-      knobValues[id_name] += 2**((7 - start) * 4) * sign;
-      knobValues[id_name] = (knobValues[id_name] & 0xFFFFFFFF)>>>0;
-      sendDDS()
-      var val_str = knobValues[id_name].toString(16).padStart(8, '0');
-      // console.log(start, val_str);
-      // store / restore cursor position
-      e.target.value = val_str;
-      e.target.setSelectionRange(start, start);
-      e.preventDefault();
-    });
-
-    document.getElementById(target_div).appendChild(tfi);
-  }
-
-  function sendDDS() {
-    s = "d," + knobValues['fcx'].toString(16) + ',' + knobValues['fcy'].toString(16) + ',' + knobValues['fmx'].toString(16) + ',' + knobValues['fmy'].toString(16) + waveforms;
-    console.log(s);
-    // websocket.send(s);
-  }
-
   function init() {
-    websocket = new WebSocket("ws://192.168.188.171/ws");
+    websocket = new WebSocket("ws://192.168.240.54/ws");
 
     websocket.onopen = function(evt) {
       connected_status.innerHTML = "⌚";
+      // setInterval(function() {
+      //   websocket.send("i");
+      // }, 1000);
     };
 
     websocket.onclose = function(evt) {
@@ -80,17 +48,7 @@
       console.log("dat: " + evt.data);
       dat = JSON.parse(evt.data);
       if ("hello" in dat) {
-        MAX_DUTY_PERCENT = dat['MAX_DUTY_PERCENT'];
-        sliders["DUTY"][0].max = MAX_DUTY_PERCENT / 100 * 10000;
-        MAX_T_ON = dat['MAX_T_ON'];
-        BITS_PER_SEC = dat["BITS_PER_SEC"];
-        tab('t_tab');
-
-        websocket.send("l");  // get names of all midi files
-
-        setInterval(function() {
-          websocket.send("i");
-        }, 1000);
+        console.log("HELLO!!!");
       } else if ("RSSI" in dat) {
         connected_status.innerHTML = "✅ (" + dat["RSSI"] + "dBm)";
       }
@@ -100,10 +58,34 @@
       connected_status.innerHTML = "🔥 " + evt;
     };
 
-    createDDSKnob('fcx', 't_dds');
-    createDDSKnob('fcy', 't_dds');
-    createDDSKnob('fmx', 't_dds');
-    createDDSKnob('fmy', 't_dds');
+    const el = document.getElementsByTagName("canvas")[0];
+
+    // using pointer_lock
+    el.addEventListener("click", async () => {
+      await canvas.requestPointerLock({
+        unadjustedMovement: true,
+      });
+    });
+
+    var btn = 0;
+    function handleMove(evt) {
+      str = `m,${evt.movementX},${evt.movementY},${btn}`
+      console.log(str);
+      websocket.send(str);
+    }
+    function handleUp(evt) {
+      btn = 0;
+      handleMove(evt);
+    }
+    function handleDown(evt) {
+      btn = 1;
+      handleMove(evt);
+    }
+    el.addEventListener("mousemove", handleMove, false);
+    el.addEventListener("mouseup", handleUp, false);
+    el.addEventListener("mousedown", handleDown, false);
+
+    console.log("initialized.");
   }
 
   window.addEventListener("load", init, false);

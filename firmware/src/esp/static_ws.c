@@ -16,7 +16,7 @@ static httpd_handle_t server = NULL;
 
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + CONFIG_SPIFFS_OBJ_NAME_LEN)
 #define BASE_PATH "/spiffs"
-#define SCRATCH_BUFSIZE  4096
+#define SCRATCH_BUFSIZE  1024
 
 char scratch[SCRATCH_BUFSIZE];
 
