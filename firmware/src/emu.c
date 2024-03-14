@@ -26,7 +26,6 @@
 #include "scc.h"
 #include "macrtc.h"
 #include "scsi.h"
-#include "hd.h"
 #include "snd.h"
 #include "mouse.h"
 #include "localtalk.h"
@@ -35,6 +34,8 @@ unsigned char *macRom;
 unsigned char *macRam;
 
 int rom_remap, video_remap=0, audio_remap=0, audio_volume=0, audio_en=0;
+
+mac_scsi_t scsi;
 
 void m68k_instruction() {
 	unsigned int pc=m68k_get_reg(NULL, M68K_REG_PC);
@@ -69,10 +70,10 @@ uint8_t bogusReadCb(unsigned int address, int data, int isWrite) {
 
 uint8_t scsiAccessCb(unsigned int address, int data, int isWrite) {
 	if (isWrite) {
-		mac_scsi_set_uint16(scsi, address, data);
+		mac_scsi_set_uint8(&scsi, address, data);
 		return 0;
 	} else {
-		return mac_scsi_get_uint16(scsi, address, data);
+		return mac_scsi_get_uint8(&scsi, address);
 	}
 }
 
@@ -294,8 +295,6 @@ void m68k_pc_changed_handler_function(unsigned int address) {
 	}
 }
 
-mac_scsi_t scsi;
-
 void tmeStartEmu(void *rom) {
 	int ca1=0, ca2=0;
 	int x, frame=0;
@@ -309,13 +308,13 @@ void tmeStartEmu(void *rom) {
 
 	printf("Creating HD and registering it...\n");
 	mac_scsi_init(&scsi);
-	// mac_scsi_set_disks (&scsi, dsks);
 	mac_scsi_set_drive (&scsi, SCSI_DEVICE0_ID, SCSI_DEVICE0_DRIVE);
-	// mac_scsi_set_drive_vendor (&scsi, SCSI_DEVICE0_ID, SCSI_DEVICE0_VENDOR);
-	// mac_scsi_set_drive_product (&scsi, SCSI_DEVICE0_ID, SCSI_DEVICE0_PRODUCT);
 
-	// SCSIDevice *hd = hdCreate();
-	// ncrRegisterDevice(6, hd);
+	scsi.dsk = disk_init(SCSI_DEVICE0_PART_NAME, SCSI_DEVICE0_DRIVE);
+	if (scsi.dsk == NULL) {
+		printf("**** Couldn't get disk :(\n");
+		abort();
+	}
 
 	viaClear(VIA_PORTA, 0x7F);
 	viaSet(VIA_PORTA, 0x80);

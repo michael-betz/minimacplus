@@ -21,5 +21,12 @@
 #define SCSI_DEVICE0_ID 6
 #define SCSI_DEVICE0_VENDOR "PCE"
 #define SCSI_DEVICE0_PRODUCT "PCEDISK"
+// not used
+#define SCSI_DEVICE0_DRIVE 128
 // partition of file-name of this disk image
-#define SCSI_DEVICE0_PART_NAME "hd"
+
+#ifdef HOSTBUILD
+    #define SCSI_DEVICE0_PART_NAME "hd.img"
+#else
+    #define SCSI_DEVICE0_PART_NAME "hd"
+#endif

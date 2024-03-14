@@ -11,146 +11,93 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ncr.h"
-#include "hd.h"
+#include "scsi.h"
 
-// typedef struct {
-// 	FILE *f;
-// 	int size;
-// } HdPriv;
-
-// const uint8_t inq_resp[95]={
-// 	0, //HD
-// 	0, //0x80 if removable
-// 	0x49, //Obsolete SCSI standard 1 all the way
-// 	0, //response version etc
-// 	31, //extra data
-// 	0,0, //reserved
-// 	0, //features
-// 	'A','P','P','L','E',' ',' ',' ', //vendor id
-// 	'2','0','S','C',' ',' ',' ',' ', //prod id
-// 	'1','.','0',' ',' ',' ',' ',' ', //prod rev lvl
-// };
-
-// static int hdScsiCmd(SCSITransferData *data, unsigned int cmd, unsigned int len, unsigned int lba, void *arg) {
-// 	int ret=0;
-// 	HdPriv *hd=(HdPriv*)arg;
-
-// 	// for (int x=0; x<32; x++)
-// 	// 	printf("%02X ", data->cmd[x]);
-// 	// printf("\n");
-
-// 	if (cmd==0x8 || cmd==0x28) { //read
-// 		printf("HD:  Read %2d blocks from LBA %5d.\n", len, lba);
-
-// 		fseek(hd->f, lba * 512, SEEK_SET);
-// 		if (len * 512 > 32 * 1024) {
-// 			printf("HD BUFFER OVERFLOW!!!\n");
-// 			abort();
-// 		}
-// 		size_t r_ret = fread(data->data, 512, len, hd->f);
-// 		if (r_ret != len) {
-// 			printf("HD ERROR: Read %d blocks, got %ld blocks.\n", len, r_ret);
-// 			return 0;
-// 		}
-// 		// hexdump(data->data, len * 512);
-// 		ret = len * 512;
-// 	} else if (cmd==0xA || cmd==0x2A) { // write
-// 		printf("HD: Write %2d blocks   to LBA %5d.\n", len, lba);
-// 		fseek(hd->f, lba*512, SEEK_SET);
-// 		fwrite(data->data, 512, len, hd->f);
-// 		ret = 0;
-// 	} else if (cmd==0x12) { //inquiry
-// 		printf("HD: Inquery\n");
-// 		memcpy(data->data, inq_resp, sizeof(inq_resp));
-// 		return 95;
-// 	} else if (cmd==0x25) { //read capacity
-// 		int lbacnt=hd->size/512;
-// 		data->data[0]=(lbacnt>>24);
-// 		data->data[1]=(lbacnt>>16);
-// 		data->data[2]=(lbacnt>>8);
-// 		data->data[3]=(lbacnt>>0);
-// 		data->data[4]=0;
-// 		data->data[5]=0;
-// 		data->data[6]=2; //512
-// 		data->data[7]=0;
-// 		ret=8;
-// 		printf("HD: Read capacity (%d)\n", lbacnt);
-// 	} else {
-// 		printf("********** hdScsiCmd: unrecognized command %x\n", cmd);
-// 	}
-// 	data->cmd[0]=0; //status
-// 	data->msg[0]=0;
-// 	return ret;
-// }
-
-// SCSIDevice *hdCreate() {
-// 	const char* file = "hd.img";
-// 	SCSIDevice *ret=malloc(sizeof(SCSIDevice));
-// 	memset(ret, 0, sizeof(SCSIDevice));
-// 	HdPriv *hd=malloc(sizeof(HdPriv));
-// 	memset(hd, 0, sizeof(HdPriv));
-// 	hd->f=fopen(file, "r+");
-// 	if (hd->f<=0) {
-// 		perror(file);
-// 		exit(0);
-// 	}
-// 	hd->size = fseek(hd->f, 0, SEEK_END);
-// 	ret->arg=hd;
-// 	ret->scsiCmd=hdScsiCmd;
-// 	return ret;
-// }
-
-
-int dsk_read_lba(disk_t *dsk, void *buf, uint32_t i, uint32_t n)
+static void image_del (disk_t *dsk)
 {
-	esp_partition_t *part = (esp_partition_t *)dsk->ext;
+	FILE *fp = (FILE *)dsk->ext;
+	fclose(fp);
+}
+
+static int image_read (disk_t *dsk, void *buf, uint32_t i, uint32_t n)
+{
+	printf("hd_read %04x %d\n", i, n);
+	FILE *fp = (FILE *)dsk->ext;
 
 	if ((i + n) > dsk->blocks)
 		return 1;
 
-	if (esp_partition_read(part, 512 * i, buf, 512 * n) != ESP_OK)
+	if(fseek(fp, 512 * i, SEEK_SET) != 0) {
+		perror("read-fseek failed");
 		return 1;
+	}
+
+	n *= 512;
+	size_t r = fread(buf, 1, n, fp);
+	if (r != n) {
+		printf("fread failed: %ld vs %d\n", r, n);
+		return 1;
+	}
 
 	return 0;
 }
 
-static int dsk_part_write (disk_t *dsk, const void *buf, uint32_t i, uint32_t n)
+static int image_write (disk_t *dsk, const void *buf, uint32_t i, uint32_t n)
 {
-	esp_partition_t *part = (esp_partition_t *)dsk->ext;
-	const uint8_t *data = buf;
-	// unsigned erase_size = part->erase_size;
-	const unsigned erase_size = 4096;
+	printf("hd_write %04x %d\n", i, n);
+	FILE *fp = (FILE *)dsk->ext;
 
-	if (dsk->readonly) {
-		return (1);
+	if ((i + n) > dsk->blocks)
+		return 1;
+
+	if(fseek(fp, 512 * i, SEEK_SET) != 0) {
+		perror("write-fseek failed");
+		return 1;
 	}
 
-	if ((i + n) > dsk->blocks) {
-		return (1);
+	n *= 512;
+	size_t r = fwrite(buf, 1, n, fp);
+	if (r != n) {
+		printf("fwrite failed: %ld vs %d\n", r, n);
+		return 1;
 	}
 
-	// uint8_t *secdat = malloc(erase_size);
-	uint8_t secdat[erase_size];
-	// if (secdat == NULL)
-	// 	return 1;
+	return 0;
+}
 
-	unsigned int lbaStart = i & (~7);
-	unsigned int lbaOff = i & 7;
+disk_t *disk_init(const char *part_name, unsigned drive_id)
+{
+	disk_t *dsk = malloc(sizeof(disk_t));
+	if (dsk == NULL) {
+		return (NULL);
+	}
 
-	if (esp_partition_read(part, lbaStart * 512, secdat, erase_size) != ESP_OK)
-		return 1;
+	printf("disk_init(%s, %d) ", part_name, drive_id);
+	FILE *fp = fopen (part_name, "r+b");
+	if (fp == NULL) {
+		perror("couldn't open");
+		return (NULL);
+	}
 
-	if (esp_partition_erase_range(part, lbaStart * 512, erase_size) != ESP_OK)
-		return 1;
+	// Get size of file
+	fseek (fp, 0, SEEK_END);
+	long cnt = ftell(fp);
+	cnt /= 512;
+	if (cnt <= 0) {
+		printf("invalid size %ld\n", cnt);
+		fclose (fp);
+		return (NULL);
+	}
 
-	for (int i = 0; i < 512; i++)
-		secdat[lbaOff * 512 + i] = data[i];
+	printf("%ld blocks\n", cnt);
 
-	if (esp_partition_write(part, lbaStart * 512, secdat, erase_size) != ESP_OK)
-		return 1;
-
-	// free(secdat);
-
-	return (0);
+	dsk_init (dsk, (void *)fp, cnt, 0, 0, 0);
+	dsk->type = PCE_DISK_RAW;
+	dsk->readonly = 0;
+	dsk->fname = NULL;  // part_name;
+	dsk->del = image_del;
+	dsk->read = image_read;
+	dsk->write = image_write;
+	dsk->drive = drive_id;
+	return dsk;
 }
