@@ -23,6 +23,8 @@
 
 #include <stdint.h>
 
+#define N_DSKS 2
+
 enum {
 	PCE_DISK_NONE,
 	PCE_DISK_RAW,
@@ -57,8 +59,6 @@ typedef struct disk_s {
 	dsk_get_msg_f get_msg;
 	dsk_set_msg_f set_msg;
 
-	unsigned      drive;
-
 	uint32_t      blocks;
 
 	uint32_t      c;
@@ -75,16 +75,6 @@ typedef struct disk_s {
 
 	void          *ext;
 } disk_t;
-
-typedef struct {
-	int           valid;
-
-	/* the PCE drive number */
-	unsigned      drive;
-
-	unsigned char vendor[8];
-	unsigned char product[16];
-} mac_scsi_dev_t;
 
 typedef struct mac_scsi_s {
 	unsigned      phase;
@@ -118,13 +108,11 @@ typedef struct mac_scsi_s {
 	void          (*cmd_start) (struct mac_scsi_s *scsi);
 	void          (*cmd_finish) (struct mac_scsi_s *scsi);
 
-	unsigned char  set_int_val;
-	void           *set_int_ext;
-	void           (*set_int) (void *ext, unsigned char val);
+	unsigned char set_int_val;
+	void          *set_int_ext;
+	void          (*set_int) (void *ext, unsigned char val);
 
-	mac_scsi_dev_t dev[8];
-
-	disk_t        *dsk;
+	disk_t  	  *dev[8];  // NULL if invalid or points to a disk_t otherwise
 } mac_scsi_t;
 
 
@@ -132,10 +120,6 @@ void mac_scsi_init (mac_scsi_t *scsi);
 void mac_scsi_free (mac_scsi_t *scsi);
 
 void mac_scsi_set_int_fct (mac_scsi_t *scsi, void *ext, void *fct);
-
-void mac_scsi_set_drive (mac_scsi_t *scsi, unsigned id, unsigned drive);
-void mac_scsi_set_drive_vendor (mac_scsi_t *scsi, unsigned id, const char *vendor);
-void mac_scsi_set_drive_product (mac_scsi_t *scsi, unsigned id, const char *product);
 
 unsigned char mac_scsi_get_uint8 (void *ext, unsigned long addr);
 unsigned short mac_scsi_get_uint16 (void *ext, unsigned long addr);
@@ -149,4 +133,4 @@ void dsk_init (disk_t *dsk, void *ext, uint32_t n, uint32_t c, uint32_t h, uint3
 
 
 // Define how to read and write from image file and its size
-disk_t *disk_init(const char *part_name, unsigned drive_id);
+disk_t *disk_init(const char *part_name);

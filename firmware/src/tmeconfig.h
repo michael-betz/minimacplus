@@ -18,15 +18,16 @@
 // Skip the RAM test on boot
 #define TME_DISABLE_MEMTEST 1
 
+#define SCSI_DEVICE_VENDOR "PCE     "
+#define SCSI_DEVICE_PRODUCT "PCEDISK         "
+
 #define SCSI_DEVICE0_ID 6
-#define SCSI_DEVICE0_VENDOR "PCE"
-#define SCSI_DEVICE0_PRODUCT "PCEDISK"
-// not used
-#define SCSI_DEVICE0_DRIVE 128
-// partition of file-name of this disk image
+#define SCSI_DEVICE1_ID 7
 
 #ifdef HOSTBUILD
-    #define SCSI_DEVICE0_PART_NAME "hd.img"
+    #define SCSI_DEVICE0_PART_NAME "hd7.img"
+    #define SCSI_DEVICE1_PART_NAME ""
 #else
     #define SCSI_DEVICE0_PART_NAME "hd"
+    #define SCSI_DEVICE1_PART_NAME ""
 #endif

@@ -295,6 +295,22 @@ void m68k_pc_changed_handler_function(unsigned int address) {
 	}
 }
 
+static void scsi_init()
+{
+	printf("Creating HD and registering it...\n");
+	mac_scsi_init(&scsi);
+
+	scsi.dev[SCSI_DEVICE0_ID] = disk_init(SCSI_DEVICE0_PART_NAME);
+	if (scsi.dev[SCSI_DEVICE0_ID] == NULL) {
+		printf("**** Couldn't get disk_0 :(\n");
+	}
+
+	scsi.dev[SCSI_DEVICE1_ID] = disk_init(SCSI_DEVICE1_PART_NAME);
+	if (scsi.dev[SCSI_DEVICE1_ID] == NULL) {
+		printf("**** Couldn't get disk_1 :(\n");
+	}
+}
+
 void tmeStartEmu(void *rom) {
 	int ca1=0, ca2=0;
 	int x, frame=0;
@@ -306,15 +322,7 @@ void tmeStartEmu(void *rom) {
 	rom_remap = 1;
 	regenMemmap(1);
 
-	printf("Creating HD and registering it...\n");
-	mac_scsi_init(&scsi);
-	mac_scsi_set_drive (&scsi, SCSI_DEVICE0_ID, SCSI_DEVICE0_DRIVE);
-
-	scsi.dsk = disk_init(SCSI_DEVICE0_PART_NAME, SCSI_DEVICE0_DRIVE);
-	if (scsi.dsk == NULL) {
-		printf("**** Couldn't get disk :(\n");
-		abort();
-	}
+	scsi_init();
 
 	viaClear(VIA_PORTA, 0x7F);
 	viaSet(VIA_PORTA, 0x80);

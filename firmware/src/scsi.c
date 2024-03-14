@@ -22,6 +22,7 @@
 // #define DEBUG_SCSI
 
 #include "scsi.h"
+#include "tmeconfig.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -120,66 +121,32 @@ void mac_scsi_init (mac_scsi_t *scsi)
 	scsi->set_int = NULL;
 
 	for (i = 0; i < 8; i++) {
-		scsi->dev[i].valid = 0;
+		scsi->dev[i] = NULL;
 	}
+}
 
-	scsi->dsk = NULL;
+static int is_dsk_online(mac_scsi_t *scsi)
+{
+	return scsi->dev[scsi->sel_drv & 7] != NULL;
+}
+
+static
+disk_t *mac_scsi_get_disk (mac_scsi_t *scsi)
+{
+	return (scsi->dev[scsi->sel_drv & 7]);
 }
 
 void mac_scsi_free (mac_scsi_t *scsi)
 {
 	free (scsi->buf);
+	for (unsigned i = 0; i < 8; i++)
+		free(scsi->dev[i]);
 }
 
 void mac_scsi_set_int_fct (mac_scsi_t *scsi, void *ext, void *fct)
 {
 	scsi->set_int_ext = ext;
 	scsi->set_int = fct;
-}
-
-void mac_scsi_set_drive (mac_scsi_t *scsi, unsigned id, unsigned drive)
-{
-	id &= 7;
-
-	scsi->dev[id].valid = 1;
-	scsi->dev[id].drive = drive;
-
-	memcpy (scsi->dev[id].vendor, "PCE     ", 8);
-	memcpy (scsi->dev[id].product, "PCEDISK         ", 16);
-}
-
-void mac_scsi_set_drive_vendor (mac_scsi_t *scsi, unsigned id, const char *vendor)
-{
-	unsigned      i;
-	unsigned char *dst;
-
-	dst = scsi->dev[id & 7].vendor;
-
-	for (i = 0; i < 8; i++) {
-		if (*vendor == 0) {
-			dst[i] = ' ';
-		}
-		else {
-			dst[i] = *(vendor++);
-		}
-	}
-}
-
-void mac_scsi_set_drive_product (mac_scsi_t *scsi, unsigned id, const char *product)
-{
-	unsigned      i;
-	unsigned char *dst;
-
-	dst = scsi->dev[id & 7].product;
-
-	for (i = 0; i < 16; i++) {
-		if (*product == 0) {
-			dst[i] = ' ';
-		}
-		else {
-			dst[i] = *(product++);
-		}
-	}
 }
 
 static
@@ -396,34 +363,6 @@ void mac_scsi_select (mac_scsi_t *scsi, unsigned char msk)
 #ifdef DEBUG_SCSI
 	printf("scsi: select (id=%02X/%u)\n", scsi->odr, scsi->sel_drv);
 #endif
-}
-
-static
-mac_scsi_dev_t *mac_scsi_get_device (mac_scsi_t *scsi)
-{
-	unsigned id;
-
-	id = scsi->sel_drv & 7;
-
-	if (scsi->dev[id].valid) {
-		return (&scsi->dev[id]);
-	}
-
-	return (NULL);
-}
-
-static
-disk_t *mac_scsi_get_disk (mac_scsi_t *scsi)
-{
-	mac_scsi_dev_t *dev;
-
-	dev = &scsi->dev[scsi->sel_drv & 7];
-
-	if ((dev->valid == 0) || (dev->drive == 0xffff)) {
-		return (NULL);
-	}
-
-	return (scsi->dsk);
 }
 
 static
@@ -682,15 +621,11 @@ void mac_scsi_cmd_verify10 (mac_scsi_t *scsi)
 static
 void mac_scsi_cmd_inquiry (mac_scsi_t *scsi)
 {
-	mac_scsi_dev_t *dev;
-
-	dev = mac_scsi_get_device (scsi);
-
 	memset (scsi->buf, 0, 256);
 
-	if (dev != NULL) {
-		memcpy (scsi->buf + 8, dev->vendor, 8);
-		memcpy (scsi->buf + 16, dev->product, 16);
+	if (is_dsk_online(scsi)) {
+		memcpy (scsi->buf + 8, SCSI_DEVICE_VENDOR, 8);
+		memcpy (scsi->buf + 16, SCSI_DEVICE_PRODUCT, 16);
 	}
 
 	scsi->buf[4] = 32;
@@ -1234,7 +1169,7 @@ void mac_scsi_set_mr2 (mac_scsi_t *scsi, unsigned char val)
 
 			scsi->icr &= ~E5380_ICR_BSY;
 
-			if (mac_scsi_get_disk (scsi) != NULL) {
+			if (is_dsk_online(scsi)) {
 				mac_scsi_set_phase_cmd (scsi);
 				mac_scsi_set_int (scsi, 1);
 			}
@@ -1456,8 +1391,6 @@ void dsk_init (disk_t *dsk, void *ext, uint32_t n, uint32_t c, uint32_t h, uint3
 	dsk->write = NULL;
 	dsk->get_msg = NULL;
 	dsk->set_msg = NULL;
-
-	dsk->drive = 0;
 
 	dsk_adjust_chs (&n, &c, &h, &s);
 

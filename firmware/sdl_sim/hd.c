@@ -21,7 +21,7 @@ static void image_del (disk_t *dsk)
 
 static int image_read (disk_t *dsk, void *buf, uint32_t i, uint32_t n)
 {
-	printf("hd_read %04x %d\n", i, n);
+	// printf("hd_read %04x %d\n", i, n);
 	FILE *fp = (FILE *)dsk->ext;
 
 	if ((i + n) > dsk->blocks)
@@ -65,14 +65,14 @@ static int image_write (disk_t *dsk, const void *buf, uint32_t i, uint32_t n)
 	return 0;
 }
 
-disk_t *disk_init(const char *part_name, unsigned drive_id)
+disk_t *disk_init(const char *part_name)
 {
 	disk_t *dsk = malloc(sizeof(disk_t));
 	if (dsk == NULL) {
 		return (NULL);
 	}
 
-	printf("disk_init(%s, %d) ", part_name, drive_id);
+	printf("disk_init(%s) ", part_name);
 	FILE *fp = fopen (part_name, "r+b");
 	if (fp == NULL) {
 		perror("couldn't open");
@@ -98,6 +98,5 @@ disk_t *disk_init(const char *part_name, unsigned drive_id)
 	dsk->del = image_del;
 	dsk->read = image_read;
 	dsk->write = image_write;
-	dsk->drive = drive_id;
 	return dsk;
 }

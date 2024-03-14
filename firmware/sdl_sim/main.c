@@ -49,6 +49,7 @@ void saveRtcMem(char *data) {
 
 //Should be called every second.
 void printFps(unsigned cycles) {
+	return;
 	struct timeval tv;
 	static struct timeval oldtv;
 	gettimeofday(&tv, NULL);
