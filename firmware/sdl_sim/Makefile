@@ -3,8 +3,8 @@
 
 SRC = ../src
 
-LDLIBS += -lm -lSDL2 -lstdc++
-CFLAGS += -g -Wall -I$(SRC) -I$(SRC)/musashi -DHOSTBUILD
+LDLIBS += -lasan -lm -lSDL2 -lstdc++
+CFLAGS += -g -Wall -fstack-protector-all -fsanitize=address -I$(SRC) -I$(SRC)/musashi -DHOSTBUILD
 
 MUSASHI_GEN_SRC := $(SRC)/musashi/m68kopac.c $(SRC)/musashi/m68kopdm.c $(SRC)/musashi/m68kopnz.c
 MUSASHI_OP_PREGEN_SRC := $(SRC)/musashi/m68kops_pre.c

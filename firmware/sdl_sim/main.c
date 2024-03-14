@@ -21,6 +21,7 @@
 #include "disp.h"
 #include "emu.h"
 #include "macrtc.h"
+#include "m68k.h"
 
 static void *loadRom(char *file) {
 	int i;
@@ -54,8 +55,10 @@ void printFps(unsigned cycles) {
 	if (oldtv.tv_sec!=0) {
 		long msec=(tv.tv_sec-oldtv.tv_sec)*1000;
 		msec+=(tv.tv_usec-oldtv.tv_usec)/1000;
+		unsigned pc = m68k_get_reg(NULL, M68K_REG_PC);
 		printf(
-			"cycles: %6d, speed: %3d%%\n",
+			"pc: %08x, cycles: %6d, speed: %3d%%\n",
+			pc,
 			cycles,
 			(int)(100000/msec)
 		);

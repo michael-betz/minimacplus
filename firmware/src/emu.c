@@ -25,7 +25,7 @@
 #include "via.h"
 #include "scc.h"
 #include "macrtc.h"
-#include "ncr.h"
+#include "scsi.h"
 #include "hd.h"
 #include "snd.h"
 #include "mouse.h"
@@ -67,12 +67,12 @@ uint8_t bogusReadCb(unsigned int address, int data, int isWrite) {
 	return address^(address>>8)^(address>>16);
 }
 
-uint8_t ncrAccessCb(unsigned int address, int data, int isWrite) {
+uint8_t scsiAccessCb(unsigned int address, int data, int isWrite) {
 	if (isWrite) {
-		ncrWrite((address>>4)&0x7, (address>>9)&1, data);
+		mac_scsi_set_uint16(scsi, address, data);
 		return 0;
 	} else {
-		return ncrRead((address>>4)&0x7, (address>>9)&1);
+		return mac_scsi_get_uint16(scsi, address, data);
 	}
 }
 
@@ -155,7 +155,7 @@ static void regenMemmap(int remapRom) {
 	//0x580000-0x600000 is SCSI controller
 	for (i=0x580000/MEMMAP_ES; i<0x600000/MEMMAP_ES; i++) {
 		memmap[i].memAddr=NULL;
-		memmap[i].cb=ncrAccessCb;
+		memmap[i].cb=scsiAccessCb;
 	}
 
 	//0x600000-0x700000 is RAM
@@ -294,6 +294,8 @@ void m68k_pc_changed_handler_function(unsigned int address) {
 	}
 }
 
+mac_scsi_t scsi;
+
 void tmeStartEmu(void *rom) {
 	int ca1=0, ca2=0;
 	int x, frame=0;
@@ -306,8 +308,14 @@ void tmeStartEmu(void *rom) {
 	regenMemmap(1);
 
 	printf("Creating HD and registering it...\n");
-	SCSIDevice *hd = hdCreate();
-	ncrRegisterDevice(6, hd);
+	mac_scsi_init(&scsi);
+	// mac_scsi_set_disks (&scsi, dsks);
+	mac_scsi_set_drive (&scsi, SCSI_DEVICE0_ID, SCSI_DEVICE0_DRIVE);
+	// mac_scsi_set_drive_vendor (&scsi, SCSI_DEVICE0_ID, SCSI_DEVICE0_VENDOR);
+	// mac_scsi_set_drive_product (&scsi, SCSI_DEVICE0_ID, SCSI_DEVICE0_PRODUCT);
+
+	// SCSIDevice *hd = hdCreate();
+	// ncrRegisterDevice(6, hd);
 
 	viaClear(VIA_PORTA, 0x7F);
 	viaSet(VIA_PORTA, 0x80);

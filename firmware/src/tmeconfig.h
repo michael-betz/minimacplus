@@ -17,3 +17,9 @@
 
 // Skip the RAM test on boot
 #define TME_DISABLE_MEMTEST 1
+
+#define SCSI_DEVICE0_ID 6
+#define SCSI_DEVICE0_VENDOR "PCE"
+#define SCSI_DEVICE0_PRODUCT "PCEDISK"
+// partition of file-name of this disk image
+#define SCSI_DEVICE0_PART_NAME "hd"
