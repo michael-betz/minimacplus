@@ -23,6 +23,9 @@
 #include "macrtc.h"
 #include "m68k.h"
 
+#include <SDL2/SDL.h>
+
+
 static void *loadRom(char *file) {
 	int i;
 	char *ret = malloc(TME_ROMSIZE);
@@ -80,6 +83,9 @@ int main(int argc, char **argv) {
 		fclose(f);
 		printf("Loaded RTC data from pram.dat\n");
 	}
-	sdlDispAudioInit();
+
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
+		abort();
+
 	tmeStartEmu(rom);
 }
