@@ -146,7 +146,7 @@ static void IRAM_ATTR displayTask(void *arg) {
 	setColRange(0, 319);
 
 	while(1) {
-		// mipiResync();
+		mipiResync();
 
 		// Wait for emulator to release the display memory
 		xSemaphoreTake(dispSem, portMAX_DELAY);

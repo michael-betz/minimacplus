@@ -112,7 +112,7 @@ void app_main()
 	));
 
 	printf("Starting emu...\n");
-	xTaskCreatePinnedToCore(&emuTask, "emu", 6*1024, NULL, 5, NULL, 0);
+	xTaskCreatePinnedToCore(&emuTask, "emu", 6*1024, NULL, 1, NULL, 0);
 
 	initWifi();
 	tryConnect();
@@ -136,6 +136,9 @@ void printFps(unsigned cycles) {
 	}
 	oldtv.tv_sec=tv.tv_sec;
 	oldtv.tv_usec=tv.tv_usec;
+
+	// Feed task watchdog
+	vTaskDelay(10 / portTICK_PERIOD_MS);
 }
 
 
