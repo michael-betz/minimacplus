@@ -112,7 +112,7 @@ void app_main()
 	));
 
 	printf("Starting emu...\n");
-	xTaskCreatePinnedToCore(&emuTask, "emu", 6*1024, NULL, 1, NULL, 0);
+	xTaskCreatePinnedToCore(&emuTask, "emu", 6 * 1024, NULL, 5, NULL, 0);
 
 	// initWifi();
 	// tryConnect();
@@ -122,6 +122,8 @@ void app_main()
 void printFps(unsigned cycles) {
 	struct timeval tv;
 	static struct timeval oldtv;
+	static char buf[512];
+
 	gettimeofday(&tv, NULL);
 	if (oldtv.tv_sec!=0) {
 		long msec=(tv.tv_sec-oldtv.tv_sec)*1000;
@@ -132,6 +134,8 @@ void printFps(unsigned cycles) {
 			(int)(100000/msec),
 			heap_caps_get_largest_free_block(0) / 1024
 		);
+ 		vTaskList(buf);
+ 		puts(buf);
 	}
 	oldtv.tv_sec=tv.tv_sec;
 	oldtv.tv_usec=tv.tv_usec;

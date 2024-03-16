@@ -293,6 +293,7 @@ void m68k_write_memory_8(unsigned int address, unsigned int value) {
 
 void m68k_write_memory_16(unsigned int address, unsigned int value) {
 	const MemmapEnt *mmEnt = getMmmapEnt(address);
+	// These printfs causes stack corruption at boot
 	if ((address & 1) != 0)
 		printf("%s: Unaligned access to %x!\n", __FUNCTION__, address);
 

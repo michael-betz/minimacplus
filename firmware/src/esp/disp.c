@@ -24,7 +24,7 @@
 //We need speed here!
 #pragma GCC optimize ("O3")
 
-#define DO_RESCALE 1
+#define DO_RESCALE 0
 
 #if DO_RESCALE
 	// Floating-point number, actually x/32. Divide mac reso by this to get lcd reso.
@@ -117,8 +117,8 @@ static uint16_t IRAM_ATTR findPixelVal(uint8_t *data, unsigned x, unsigned y) {
 	uint8_t tmp = data[x / 8 + y * 64];
 
 	// to find the pixel we need to return the (x % 8)th bit
-	uint8_t mask = 1 << (7 - (x & 7));
-	return (tmp & mask) ? 0xffff : 0;
+	uint8_t mask = 0x80 >> (x & 7);
+	return (tmp & mask) ? 0 : 0xffff;
 	// return (data[y * 64 + (x >> 3)] & (1 << ((7 - x) & 7))) ? 0 : 0xffff;
 }
 
@@ -134,13 +134,15 @@ SemaphoreHandle_t dispSem = NULL;
 #define YOFFSET 0
 
 static void IRAM_ATTR displayTask(void *arg) {
-	uint8_t *img = malloc((LINESPERBUF * 320 * 2));
-	assert(img);
+	// uint8_t *img = malloc((LINESPERBUF * 320 * 2));
+	static uint8_t img[LINESPERBUF * 320 * 2];
+	// assert(img);
 
 	calcLut();
 
-	uint8_t *oldImg = malloc(512 * 342 / 8);
-	assert(oldImg);
+	// uint8_t *oldImg = malloc(512 * 342 / 8);
+	static uint8_t oldImg[512 * 342 / 8];
+	// assert(oldImg);
 
 	int firstrun = 1;
 	setColRange(0, 319);
@@ -219,5 +221,5 @@ void dispInit() {
 	initOled();
 	// set_brightness(5);
     dispSem = xSemaphoreCreateBinary();
-	xTaskCreatePinnedToCore(&displayTask, "display", 3000, NULL, 5, NULL, 1);
+	xTaskCreatePinnedToCore(&displayTask, "display", 6 * 1024, NULL, 5, NULL, 1);
 }

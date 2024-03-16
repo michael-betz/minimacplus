@@ -119,7 +119,7 @@ void sndInit() {
 	};
 	gpio_config(&io_conf);
 #endif
-	xTaskCreatePinnedToCore(&sndTask, "snd", 3*1024, NULL, 6, NULL, 1);
+	xTaskCreatePinnedToCore(&sndTask, "snd", 6 * 1024, NULL, 5, NULL, 1);
 }
 
 

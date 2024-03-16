@@ -402,6 +402,7 @@ void mac_scsi_cmd_read (mac_scsi_t *scsi, unsigned long lba, unsigned long cnt)
 		return;
 	}
 
+// For some reason, this print is obligatory
 // #ifdef DEBUG_SCSI
 	printf("scsi: read %lu blocks at %lu\n", cnt, lba);
 // #endif
