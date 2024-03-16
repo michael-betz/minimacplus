@@ -19,26 +19,18 @@ SDL_Window* win = NULL;
 SDL_Surface* surf = NULL;
 SDL_Surface* drwsurf=NULL;
 
-void sdlDie() {
-	printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
-	exit(0);
-}
-
 void dispInit() {
 	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
 	SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "1");
 
 	win=SDL_CreateWindow( "TME", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_RESIZABLE);
-	if (win == 0)
-		sdlDie();
+	if (win == 0) {
+		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
+		exit(0);
+	}
 
 	drwsurf = SDL_CreateRGBSurfaceWithFormat(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, SDL_PIXELFORMAT_RGBA32);
 	SDL_SetRelativeMouseMode(1);
-}
-
-void sdlDispAudioInit() {
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
-		sdlDie();
 }
 
 void mouse_init() {}

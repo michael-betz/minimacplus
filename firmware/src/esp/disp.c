@@ -28,7 +28,7 @@
 
 #if DO_RESCALE
 	// Floating-point number, actually x/32. Divide mac reso by this to get lcd reso.
-	#define SCALE_FACT 51
+	#define SCALE_FACT 42  // 51
 #else
 	#define SCALE_FACT 32
 #endif
@@ -146,7 +146,7 @@ static void IRAM_ATTR displayTask(void *arg) {
 	setColRange(0, 319);
 
 	while(1) {
-		// mipiResync();
+		mipiResync();
 
 		// Wait for emulator to release the display memory
 		xSemaphoreTake(dispSem, portMAX_DELAY);
@@ -217,6 +217,7 @@ void dispDraw(uint8_t *mem) {
 void dispInit() {
 	mipiInit();
 	initOled();
+	// set_brightness(5);
     dispSem = xSemaphoreCreateBinary();
 	xTaskCreatePinnedToCore(&displayTask, "display", 3000, NULL, 5, NULL, 1);
 }

@@ -25,16 +25,18 @@
 #include "via.h"
 #include "scc.h"
 #include "macrtc.h"
-#include "ncr.h"
-#include "hd.h"
+#include "scsi.h"
 #include "snd.h"
 #include "mouse.h"
 #include "localtalk.h"
+// #include "esp32/himem.h"
 
 unsigned char *macRom;
 unsigned char *macRam;
 
 int rom_remap, video_remap=0, audio_remap=0, audio_volume=0, audio_en=0;
+
+mac_scsi_t scsi;
 
 void m68k_instruction() {
 	unsigned int pc=m68k_get_reg(NULL, M68K_REG_PC);
@@ -67,12 +69,12 @@ uint8_t bogusReadCb(unsigned int address, int data, int isWrite) {
 	return address^(address>>8)^(address>>16);
 }
 
-uint8_t ncrAccessCb(unsigned int address, int data, int isWrite) {
+uint8_t scsiAccessCb(unsigned int address, int data, int isWrite) {
 	if (isWrite) {
-		ncrWrite((address>>4)&0x7, (address>>9)&1, data);
+		mac_scsi_set_uint8(&scsi, address, data);
 		return 0;
 	} else {
-		return ncrRead((address>>4)&0x7, (address>>9)&1);
+		return mac_scsi_get_uint8(&scsi, address);
 	}
 }
 
@@ -155,7 +157,7 @@ static void regenMemmap(int remapRom) {
 	//0x580000-0x600000 is SCSI controller
 	for (i=0x580000/MEMMAP_ES; i<0x600000/MEMMAP_ES; i++) {
 		memmap[i].memAddr=NULL;
-		memmap[i].cb=ncrAccessCb;
+		memmap[i].cb=scsiAccessCb;
 	}
 
 	//0x600000-0x700000 is RAM
@@ -188,13 +190,40 @@ uint8_t *macFb[2], *macSnd[2];
 
 static void ramInit() {
 	#ifdef HOSTBUILD
-		printf("Using malloc(TME_RAMSIZE) as Mac RAM\n");
+		printf("Using malloc(%d) as Mac RAM\n", TME_RAMSIZE);
 		macRam = malloc(TME_RAMSIZE);
 	#else
+		printf("Using malloc(%d) as Mac RAM\n", TME_RAMSIZE);
+		macRam = malloc(TME_RAMSIZE);
+
 		// for some reason, esp-idf only provides 0x3efff4 / 0x400000 bytes for malloc
 		// found the reason: canary bytes for heap debugging
-		printf("Using PSRAM through mapped memory as Mac RAM\n");
-		macRam = (void*)0x3F800000;
+		// macRam = (void*)0x3F800000;
+
+		// printf("Using PSRAM through HIMEM API as Mac RAM\n");
+		// size_t memcnt = esp_himem_get_phys_size();
+    	// size_t memfree = esp_himem_get_free_size();
+    	// printf("Himem has %d KB of memory, %d KB of which is free.\n", (int)memcnt/1024, (int)memfree/1024);
+
+	    // esp_himem_handle_t mh;  // Handle for the address space we're using
+	    // esp_himem_rangehandle_t rh;  // Handle for the actual RAM.
+
+	    // //Allocate the memory we're going to check.
+	    // ESP_ERROR_CHECK(esp_himem_alloc(check_size, &mh));
+
+	    // //Allocate a block of address range
+	    // ESP_ERROR_CHECK(esp_himem_alloc_map_range(ESP_HIMEM_BLKSZ, &rh));
+	    // for (int i = 0; i < check_size; i += ESP_HIMEM_BLKSZ) {
+	    //     uint32_t *ptr = NULL;
+	    //     //Map in block, write pseudo-random data, unmap block.
+	    //     ESP_ERROR_CHECK(esp_himem_map(mh, rh, i, 0, ESP_HIMEM_BLKSZ, 0, (void**)&ptr));
+	    //     fill_mem_seed(i ^ seed, ptr, ESP_HIMEM_BLKSZ); //
+	    //     ESP_ERROR_CHECK(esp_himem_unmap(rh, ptr, ESP_HIMEM_BLKSZ));
+	    // }
+
+	    //Okay, all done!
+	    // ESP_ERROR_CHECK(esp_himem_free(mh));
+	    // ESP_ERROR_CHECK(esp_himem_free_map_range(rh));
 	#endif
 
 	assert(macRam);
@@ -294,6 +323,22 @@ void m68k_pc_changed_handler_function(unsigned int address) {
 	}
 }
 
+static void scsi_init()
+{
+	printf("Creating HD and registering it...\n");
+	mac_scsi_init(&scsi);
+
+	scsi.dev[SCSI_DEVICE0_ID] = disk_init(SCSI_DEVICE0_PART_NAME);
+	if (scsi.dev[SCSI_DEVICE0_ID] == NULL) {
+		printf("**** Couldn't get disk_0 :(\n");
+	}
+
+	scsi.dev[SCSI_DEVICE1_ID] = disk_init(SCSI_DEVICE1_PART_NAME);
+	if (scsi.dev[SCSI_DEVICE1_ID] == NULL) {
+		printf("**** Couldn't get disk_1 :(\n");
+	}
+}
+
 void tmeStartEmu(void *rom) {
 	int ca1=0, ca2=0;
 	int x, frame=0;
@@ -305,9 +350,7 @@ void tmeStartEmu(void *rom) {
 	rom_remap = 1;
 	regenMemmap(1);
 
-	printf("Creating HD and registering it...\n");
-	SCSIDevice *hd = hdCreate();
-	ncrRegisterDevice(6, hd);
+	scsi_init();
 
 	viaClear(VIA_PORTA, 0x7F);
 	viaSet(VIA_PORTA, 0x80);
@@ -374,7 +417,7 @@ void tmeStartEmu(void *rom) {
 			viaControlWrite(VIA_CA2, ca2);
 			rtcTick();
 			frame=0;
-			// printFps(cyclesPerSec);
+			printFps(cyclesPerSec);
 			cyclesPerSec = 0;
 		}
 	}

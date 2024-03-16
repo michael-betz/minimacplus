@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8" />
+<head>
+  <title>💻 Mini Mac Plus 💻</title>
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+<div style="text-align: center;">
+  <h1>💻 Mini Mac Plus 💻</h1>
+  <i>A Macintosh for ants.</i>
+  <b>WS: <span id=connected_status>❌</span></b>
+  <div>
+    <button onclick="tab('t_mouse');">MOUSE</button>
+    <button onclick="window.location.href='settings.htm';">Settings</button>
+  </div>
+</div>
+<div class="tab" id="t_mouse">
+  <canvas
+    id="canvas"
+    width="300"
+    height="200"
+    style="border:solid white 1px; touch-action:none">
+    Your browser does not support canvas element.
+  </canvas>
+</div>
+</body>
+<script language="javascript" type="text/javascript">
+  var websocket;
+  var knobValues = {};
+  var waveforms = 0;
+
+  function init() {
+    var host = window.location.host;
+    if (host == "")
+      host = "192.168.240.54"
+    websocket = new WebSocket("ws://" + host + "/ws");
+
+    websocket.onopen = function(evt) {
+      connected_status.innerHTML = "⌚";
+      // setInterval(function() {
+      //   websocket.send("i");
+      // }, 1000);
+    };
+
+    websocket.onclose = function(evt) {
+      connected_status.innerHTML = "❌";
+    };
+
+    websocket.onmessage = function(evt) {
+      console.log("dat: " + evt.data);
+      dat = JSON.parse(evt.data);
+      if ("hello" in dat) {
+        console.log("HELLO!!!");
+      } else if ("RSSI" in dat) {
+        connected_status.innerHTML = "✅ (" + dat["RSSI"] + "dBm)";
+      }
+    };
+
+    websocket.onerror = function(evt) {
+      connected_status.innerHTML = "🔥 " + evt;
+    };
+
+    const el = document.getElementsByTagName("canvas")[0];
+
+    // using pointer_lock
+    el.addEventListener("click", async () => {
+      await canvas.requestPointerLock({
+        unadjustedMovement: true,
+      });
+    });
+
+    var btn = 0;
+    function handleMove(evt) {
+      str = `m,${evt.movementX},${evt.movementY},${btn}`
+      console.log(str);
+      websocket.send(str);
+    }
+    function handleUp(evt) {
+      btn = 0;
+      handleMove(evt);
+    }
+    function handleDown(evt) {
+      btn = 1;
+      handleMove(evt);
+    }
+    el.addEventListener("mousemove", handleMove, false);
+    el.addEventListener("mouseup", handleUp, false);
+    el.addEventListener("mousedown", handleDown, false);
+
+    console.log("initialized.");
+  }
+
+  window.addEventListener("load", init, false);
+</script>

@@ -21,6 +21,10 @@
 #include "disp.h"
 #include "emu.h"
 #include "macrtc.h"
+#include "m68k.h"
+
+#include <SDL2/SDL.h>
+
 
 static void *loadRom(char *file) {
 	int i;
@@ -48,14 +52,17 @@ void saveRtcMem(char *data) {
 
 //Should be called every second.
 void printFps(unsigned cycles) {
+	return;
 	struct timeval tv;
 	static struct timeval oldtv;
 	gettimeofday(&tv, NULL);
 	if (oldtv.tv_sec!=0) {
 		long msec=(tv.tv_sec-oldtv.tv_sec)*1000;
 		msec+=(tv.tv_usec-oldtv.tv_usec)/1000;
+		unsigned pc = m68k_get_reg(NULL, M68K_REG_PC);
 		printf(
-			"cycles: %6d, speed: %3d%%\n",
+			"pc: %08x, cycles: %6d, speed: %3d%%\n",
+			pc,
 			cycles,
 			(int)(100000/msec)
 		);
@@ -76,6 +83,9 @@ int main(int argc, char **argv) {
 		fclose(f);
 		printf("Loaded RTC data from pram.dat\n");
 	}
-	sdlDispAudioInit();
+
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
+		abort();
+
 	tmeStartEmu(rom);
 }
