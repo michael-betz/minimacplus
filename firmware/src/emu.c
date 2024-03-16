@@ -29,7 +29,11 @@
 #include "snd.h"
 #include "mouse.h"
 #include "localtalk.h"
-// #include "esp32/himem.h"
+
+#ifndef HOSTBUILD
+	// #include "esp32/himem.h"
+	#include "esp_heap_caps.h"
+#endif
 
 unsigned char *macRom;
 unsigned char *macRam;
@@ -198,8 +202,11 @@ static void ramInit() {
 			macRam = (void*)0x3F800000;
 		#else
 			// for some reason, esp-idf only provides 0x3efff4 / 0x400000 bytes for malloc
-			printf("Using malloc(%06x) as Mac RAM\n", TME_RAMSIZE);
-			macRam = malloc(TME_RAMSIZE);
+			// printf("Using malloc(%06x) as Mac RAM\n", TME_RAMSIZE);
+			// macRam = malloc(TME_RAMSIZE);
+
+			printf("Using heap_caps_malloc(%06x) as Mac RAM\n", TME_RAMSIZE);
+			macRam = heap_caps_malloc(TME_RAMSIZE, MALLOC_CAP_SPIRAM);
 		#endif
 		// printf("Using PSRAM through HIMEM API as Mac RAM\n");
 		// size_t memcnt = esp_himem_get_phys_size();
