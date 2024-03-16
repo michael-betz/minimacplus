@@ -217,6 +217,7 @@ void dispDraw(uint8_t *mem) {
 void dispInit() {
 	mipiInit();
 	initOled();
+	// set_brightness(5);
     dispSem = xSemaphoreCreateBinary();
 	xTaskCreatePinnedToCore(&displayTask, "display", 3000, NULL, 5, NULL, 1);
 }

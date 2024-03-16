@@ -31,7 +31,10 @@
   var waveforms = 0;
 
   function init() {
-    websocket = new WebSocket("ws://192.168.240.54/ws");
+    var host = window.location.host;
+    if (host == "")
+      host = "192.168.240.54"
+    websocket = new WebSocket("ws://" + host + "/ws");
 
     websocket.onopen = function(evt) {
       connected_status.innerHTML = "⌚";
