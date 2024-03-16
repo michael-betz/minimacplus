@@ -39,9 +39,9 @@
 #include "hexdump.h"
 #include "tmeconfig.h"
 #include "macrtc.h"
-#include "wifi.h"
-#include "static_ws.h"
-#include "json_settings.h"
+// #include "wifi/wifi.h"
+// #include "wifi/static_ws.h"
+// #include "wifi/json_settings.h"
 
 unsigned char *romdata;
 nvs_handle nvs;
@@ -66,16 +66,16 @@ void app_main()
 	uint8_t pram[32];
 
 	// Mount spiffs for *.html and defaults.json
-	esp_vfs_spiffs_conf_t conf = {
-		.base_path = "/spiffs",
-		.partition_label = NULL,
-		.max_files = 4,
-		.format_if_mount_failed = true
-	};
-	esp_vfs_spiffs_register(&conf);
+	// esp_vfs_spiffs_conf_t conf = {
+	// 	.base_path = "/spiffs",
+	// 	.partition_label = NULL,
+	// 	.max_files = 4,
+	// 	.format_if_mount_failed = true
+	// };
+	// esp_vfs_spiffs_register(&conf);
 
 	// Load settings.json from SPIFFS, try to create file if it doesn't exist
-	set_settings_file("/spiffs/settings.json", "/spiffs/default_settings.json");
+	// set_settings_file("/spiffs/settings.json", "/spiffs/default_settings.json");
 
 	// load 32 bytes of PRAM from NVS
 	nvs_flash_init();
@@ -114,8 +114,8 @@ void app_main()
 	printf("Starting emu...\n");
 	xTaskCreatePinnedToCore(&emuTask, "emu", 6*1024, NULL, 1, NULL, 0);
 
-	initWifi();
-	tryConnect();
+	// initWifi();
+	// tryConnect();
 }
 
 // called every second by emu.c
@@ -127,11 +127,10 @@ void printFps(unsigned cycles) {
 		long msec=(tv.tv_sec-oldtv.tv_sec)*1000;
 		msec+=(tv.tv_usec-oldtv.tv_usec)/1000;
 		printf(
-			"cycles: %6d, speed: %3d%%, free: %3d kB_8, %3d kB_32\n",
+			"cycles: %6d, speed: %3d%%, heap: %3d kB\n",
 			cycles,
 			(int)(100000/msec),
-			heap_caps_get_free_size(MALLOC_CAP_8BIT) / 1024,
-			heap_caps_get_free_size(MALLOC_CAP_32BIT) / 1024
+			heap_caps_get_largest_free_block(0) / 1024
 		);
 	}
 	oldtv.tv_sec=tv.tv_sec;
@@ -143,41 +142,41 @@ void printFps(unsigned cycles) {
 
 
 
-void ws_callback(uint8_t *payload, unsigned len)
-{
-	char tmpStr[256];
-	char *pl = (char*)payload;
+// void ws_callback(uint8_t *payload, unsigned len)
+// {
+// 	char tmpStr[256];
+// 	char *pl = (char*)payload;
 
-	printf("ws_callback(%d)\n", len);
-	if (len < 1)
-		return;
+// 	printf("ws_callback(%d)\n", len);
+// 	if (len < 1)
+// 		return;
 
-	// hexdump(payload, len);
+// 	// hexdump(payload, len);
 
-	switch (pl[0]) {
-		case 'i':  // 'i' command = RSSI
-			int rssi = 0;
-			esp_wifi_sta_get_rssi(&rssi);
-			snprintf(tmpStr, sizeof(tmpStr), "{\"RSSI\": %d}", rssi);
-			ws_send((uint8_t*)tmpStr, strnlen(tmpStr, sizeof(tmpStr)));
-			break;
+// 	switch (pl[0]) {
+// 		case 'i':  // 'i' command = RSSI
+// 			int rssi = 0;
+// 			esp_wifi_sta_get_rssi(&rssi);
+// 			snprintf(tmpStr, sizeof(tmpStr), "{\"RSSI\": %d}", rssi);
+// 			ws_send((uint8_t*)tmpStr, strnlen(tmpStr, sizeof(tmpStr)));
+// 			break;
 
-		case 'm':  // 'm,12,45,0' update mouse dx, dy, btn
-			// split string into 4 tokens at ',' and convert to int
-			long temp_dx=0, temp_dy=0, temp_btn=0;
-			char *tok = NULL;
-			for(unsigned tok_id = 0; tok_id <= 3; tok_id++) {
-				tok = strsep(&pl, ",");
-				if (tok == NULL) {
-					printf("m - parse error!\n");
-					return;
-				}
-				if (tok_id == 1) 		temp_dx = strtol(tok, NULL, 0);
-				else if (tok_id == 2)	temp_dy = strtol(tok, NULL, 0);
-				else if (tok_id == 3) 	temp_btn = strtol(tok, NULL, 0);
-			}
-			printf("mouse(%ld, %ld, %ld)\n", temp_dx, temp_dy, temp_btn);
-			mouseMove(temp_dx, temp_dy, temp_btn);
-			break;
-	}
-}
+// 		case 'm':  // 'm,12,45,0' update mouse dx, dy, btn
+// 			// split string into 4 tokens at ',' and convert to int
+// 			long temp_dx=0, temp_dy=0, temp_btn=0;
+// 			char *tok = NULL;
+// 			for(unsigned tok_id = 0; tok_id <= 3; tok_id++) {
+// 				tok = strsep(&pl, ",");
+// 				if (tok == NULL) {
+// 					printf("m - parse error!\n");
+// 					return;
+// 				}
+// 				if (tok_id == 1) 		temp_dx = strtol(tok, NULL, 0);
+// 				else if (tok_id == 2)	temp_dy = strtol(tok, NULL, 0);
+// 				else if (tok_id == 3) 	temp_btn = strtol(tok, NULL, 0);
+// 			}
+// 			printf("mouse(%ld, %ld, %ld)\n", temp_dx, temp_dy, temp_btn);
+// 			mouseMove(temp_dx, temp_dy, temp_btn);
+// 			break;
+// 	}
+// }

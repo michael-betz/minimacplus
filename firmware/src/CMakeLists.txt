@@ -2,6 +2,8 @@
 
 FILE(GLOB SRCS *.c)
 FILE(GLOB SRCS_ESP esp/*.c)
+FILE(GLOB SRCS_WIFI esp/wifi/*.c)
+
 set(SRCS_AUTOGEN
 	musashi/m68kopac.c
 	musashi/m68kopdm.c
@@ -11,6 +13,7 @@ set(SRCS_AUTOGEN
 
 list(APPEND ALL_SRCS ${SRCS})
 list(APPEND ALL_SRCS ${SRCS_ESP})
+# list(APPEND ALL_SRCS ${SRCS_WIFI})
 list(APPEND ALL_SRCS musashi/m68kcpu.c)
 list(APPEND ALL_SRCS ${SRCS_AUTOGEN})
 

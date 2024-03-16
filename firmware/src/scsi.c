@@ -19,6 +19,7 @@
  * Public License for more details.                                          *
  *****************************************************************************/
 
+// This seems to break OS7 boot, why?
 // #define DEBUG_SCSI
 
 #include "scsi.h"
@@ -401,9 +402,9 @@ void mac_scsi_cmd_read (mac_scsi_t *scsi, unsigned long lba, unsigned long cnt)
 		return;
 	}
 
-#ifdef DEBUG_SCSI
+// #ifdef DEBUG_SCSI
 	printf("scsi: read %lu blocks at %lu\n", cnt, lba);
-#endif
+// #endif
 
 	if (mac_scsi_set_buf_max (scsi, 512UL * cnt)) {
 		printf("scsi: too many blocks (%lu)\n", cnt);
@@ -482,9 +483,9 @@ void mac_scsi_cmd_write_finish (mac_scsi_t *scsi, unsigned long lba, unsigned lo
 		return;
 	}
 
-#ifdef DEBUG_SCSI
+// #ifdef DEBUG_SCSI
 	printf("scsi: write %lu blocks at %lu\n", cnt, lba);
-#endif
+// #endif
 
 	if (dsk->write(dsk, scsi->buf, lba, cnt)) {
 		printf("scsi: write error\n");

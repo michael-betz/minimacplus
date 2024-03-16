@@ -190,16 +190,17 @@ uint8_t *macFb[2], *macSnd[2];
 
 static void ramInit() {
 	#ifdef HOSTBUILD
-		printf("Using malloc(%d) as Mac RAM\n", TME_RAMSIZE);
+		printf("Using malloc(%06x) as Mac RAM\n", TME_RAMSIZE);
 		macRam = malloc(TME_RAMSIZE);
 	#else
-		printf("Using malloc(%d) as Mac RAM\n", TME_RAMSIZE);
-		macRam = malloc(TME_RAMSIZE);
-
-		// for some reason, esp-idf only provides 0x3efff4 / 0x400000 bytes for malloc
-		// found the reason: canary bytes for heap debugging
-		// macRam = (void*)0x3F800000;
-
+		#ifdef CONFIG_SPIRAM_USE_MEMMAP
+			printf("Using static memory mapping (%06x) as Mac RAM\n", TME_RAMSIZE);
+			macRam = (void*)0x3F800000;
+		#else
+			// for some reason, esp-idf only provides 0x3efff4 / 0x400000 bytes for malloc
+			printf("Using malloc(%06x) as Mac RAM\n", TME_RAMSIZE);
+			macRam = malloc(TME_RAMSIZE);
+		#endif
 		// printf("Using PSRAM through HIMEM API as Mac RAM\n");
 		// size_t memcnt = esp_himem_get_phys_size();
     	// size_t memfree = esp_himem_get_free_size();
@@ -225,7 +226,6 @@ static void ramInit() {
 	    // ESP_ERROR_CHECK(esp_himem_free(mh));
 	    // ESP_ERROR_CHECK(esp_himem_free_map_range(rh));
 	#endif
-
 	assert(macRam);
 
 	macFb[0] = &macRam[TME_SCREENBUF];
@@ -333,10 +333,10 @@ static void scsi_init()
 		printf("**** Couldn't get disk_0 :(\n");
 	}
 
-	scsi.dev[SCSI_DEVICE1_ID] = disk_init(SCSI_DEVICE1_PART_NAME);
-	if (scsi.dev[SCSI_DEVICE1_ID] == NULL) {
-		printf("**** Couldn't get disk_1 :(\n");
-	}
+	// scsi.dev[SCSI_DEVICE1_ID] = disk_init(SCSI_DEVICE1_PART_NAME);
+	// if (scsi.dev[SCSI_DEVICE1_ID] == NULL) {
+	// 	printf("**** Couldn't get disk_1 :(\n");
+	// }
 }
 
 void tmeStartEmu(void *rom) {

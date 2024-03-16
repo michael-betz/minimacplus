@@ -23,7 +23,7 @@
 
 #include <stdint.h>
 
-#define N_DSKS 2
+#define N_DSKS 1
 
 enum {
 	PCE_DISK_NONE,

@@ -348,14 +348,14 @@ void sccRecv(int chan, uint8_t *data, int len, int delay) {
 }
 
 void sccTxFinished(int chan) {
-	hexdump(scc.chan[chan].txData, scc.chan[chan].txPos);
-	localtalkSend(scc.chan[chan].txData, scc.chan[chan].txPos);
-	//Echo back data over Rx of same channel
-//	sccRecv(chan, scc.chan[chan].txData, scc.chan[chan].txPos, 0);
-//	triggerRx(chan);
+	// hexdump(scc.chan[chan].txData, scc.chan[chan].txPos);
+	// localtalkSend(scc.chan[chan].txData, scc.chan[chan].txPos);
+	// Echo back data over Rx of same channel
+	// sccRecv(chan, scc.chan[chan].txData, scc.chan[chan].txPos, 0);
+	// triggerRx(chan);
 
 	scc.chan[chan].txPos=0;
-	//scc.chan[chan].hunting=1;
+	// scc.chan[chan].hunting=1;
 }
 
 static void checkRxIntPending(int chan) {
@@ -610,7 +610,7 @@ unsigned int sccRead(unsigned int addr) {
 			}
 //			if (left==1) scc.chan[chan].hunting=1;
 		} else {
-			printf("SCC READ but no data?\n");
+			// printf("SCC READ but no data?\n");
 			scc.chan[chan].rxEom=0;
 			val=0;
 		}
