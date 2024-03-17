@@ -37,7 +37,7 @@ int sndDone() { // returns 1 when stuff can be written to buffer
 volatile static int myVolume;
 
 void sndTask(void *arg) {
-	static uint8_t tmpb[SND_CHUNKSZ] = {0};
+	static uint16_t tmpb[SND_CHUNKSZ] = {0};
 	printf("Sound task started.\n");
 	while (1) {
 		int volume = (int)myVolume;
@@ -48,10 +48,9 @@ void sndTask(void *arg) {
 			volume = 7;
 
 		for (int j=0; j<SND_CHUNKSZ; j++) {
-			int s = buf[rp];
-			s = ((s - 128) >> (7 - volume));
-			// s = s / 16;
-			tmpb[j] = s + 128;
+			// make sure CONFIG_DAC_DMA_AUTO_16BIT_ALIGN is cleared in menuconfig.
+			unsigned tmp = buf[rp] << 8;
+			tmpb[j] = tmp >> (7 - volume);
 			rp++;
 			if (rp >= BUFLEN)
 				rp = 0;
