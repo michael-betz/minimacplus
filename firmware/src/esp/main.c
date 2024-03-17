@@ -119,32 +119,32 @@ void app_main()
 }
 
 // called every second by emu.c
-void printFps(unsigned cycles) {
+void printFps(unsigned pc) {
 	struct timeval tv;
 	static struct timeval oldtv;
-	static char buf[512];
+	// static char buf[512];
 
 	gettimeofday(&tv, NULL);
 	if (oldtv.tv_sec!=0) {
 		long msec=(tv.tv_sec-oldtv.tv_sec)*1000;
 		msec+=(tv.tv_usec-oldtv.tv_usec)/1000;
 		printf(
-			"cycles: %6d, speed: %3d%%, heap: %3d kB\n",
-			cycles,
+			"pc: %06x, speed: %3d%%, heap: %3d kB\n",
+			pc,
 			(int)(100000/msec),
 			heap_caps_get_largest_free_block(0) / 1024
 		);
- 		vTaskList(buf);
- 		puts(buf);
+
+		// Print task list with stack watermark
+ 		// vTaskList(buf);
+ 		// puts(buf);
 	}
 	oldtv.tv_sec=tv.tv_sec;
 	oldtv.tv_usec=tv.tv_usec;
 
 	// Feed task watchdog
-	vTaskDelay(10 / portTICK_PERIOD_MS);
+	// vTaskDelay(10 / portTICK_PERIOD_MS);
 }
-
-
 
 // void ws_callback(uint8_t *payload, unsigned len)
 // {

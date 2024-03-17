@@ -202,11 +202,12 @@ static void ramInit() {
 			macRam = (void*)0x3F800000;
 		#else
 			// for some reason, esp-idf only provides 0x3efff4 / 0x400000 bytes for malloc
+			// Also the framebuffer doesn't seem to work when using malloc()
 			// printf("Using malloc(%06x) as Mac RAM\n", TME_RAMSIZE);
 			// macRam = malloc(TME_RAMSIZE);
 
 			printf("Using heap_caps_malloc(%06x) as Mac RAM\n", TME_RAMSIZE);
-			macRam = heap_caps_malloc(TME_RAMSIZE, MALLOC_CAP_SPIRAM);
+			macRam = heap_caps_malloc(TME_RAMSIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 		#endif
 		// printf("Using PSRAM through HIMEM API as Mac RAM\n");
 		// size_t memcnt = esp_himem_get_phys_size();
@@ -425,7 +426,7 @@ void tmeStartEmu(void *rom) {
 			viaControlWrite(VIA_CA2, ca2);
 			rtcTick();
 			frame=0;
-			printFps(cyclesPerSec);
+			printFps(m68k_get_reg(NULL, M68K_REG_PC));
 			cyclesPerSec = 0;
 		}
 	}

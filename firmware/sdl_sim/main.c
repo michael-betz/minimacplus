@@ -51,19 +51,16 @@ void saveRtcMem(char *data) {
 }
 
 //Should be called every second.
-void printFps(unsigned cycles) {
-	return;
+void printFps(unsigned pc) {
 	struct timeval tv;
 	static struct timeval oldtv;
 	gettimeofday(&tv, NULL);
 	if (oldtv.tv_sec!=0) {
 		long msec=(tv.tv_sec-oldtv.tv_sec)*1000;
 		msec+=(tv.tv_usec-oldtv.tv_usec)/1000;
-		unsigned pc = m68k_get_reg(NULL, M68K_REG_PC);
 		printf(
-			"pc: %08x, cycles: %6d, speed: %3d%%\n",
+			"pc: %06x, speed: %3d%%\n",
 			pc,
-			cycles,
 			(int)(100000/msec)
 		);
 	}

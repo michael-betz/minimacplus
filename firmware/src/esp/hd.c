@@ -34,6 +34,9 @@ static int image_read(disk_t *dsk, void *buf, uint32_t i, uint32_t n)
 
 static int image_write(disk_t *dsk, const void *buf, uint32_t i, uint32_t n)
 {
+	// This freezes everything for a few seconds?
+	return 0;
+	printf("image_write(%ld, %ld)\n", i, n);
 	esp_partition_t *part = (esp_partition_t *)dsk->ext;
 	const uint8_t *data = buf;
 	// const unsigned erase_size = part->erase_size;

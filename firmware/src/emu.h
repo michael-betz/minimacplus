@@ -7,4 +7,4 @@ void tmeMouseMovement(int dx, int dy, int btn);
 
 
 // should be called every (emulated) second. Prints stats.
-void printFps(unsigned cycles);
+void printFps(unsigned program_counter);

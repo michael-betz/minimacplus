@@ -402,10 +402,9 @@ void mac_scsi_cmd_read (mac_scsi_t *scsi, unsigned long lba, unsigned long cnt)
 		return;
 	}
 
-// For some reason, this print is obligatory
-// #ifdef DEBUG_SCSI
+#ifdef DEBUG_SCSI
 	printf("scsi: read %lu blocks at %lu\n", cnt, lba);
-// #endif
+#endif
 
 	if (mac_scsi_set_buf_max (scsi, 512UL * cnt)) {
 		printf("scsi: too many blocks (%lu)\n", cnt);
@@ -610,9 +609,9 @@ void mac_scsi_cmd_verify10 (mac_scsi_t *scsi)
 	cnt = scsi->cmd[7];
 	cnt = (cnt << 8) | scsi->cmd[8];
 
-#ifdef DEBUG_SCSI
+// #ifdef DEBUG_SCSI
 	printf("scsi: verify %u blocks at %lu\n", cnt, lba);
-#endif
+// #endif
 
 	scsi->buf_i = 0;
 	scsi->buf_n = 0;
