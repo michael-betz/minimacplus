@@ -205,8 +205,8 @@ unsigned int m68k_read_memory_8(unsigned int address) {
 
 unsigned int m68k_read_memory_16(unsigned int address) {
 	const MemmapEnt *mmEnt = getMmmapEnt(address);
-	if ((address & 1) != 0)
-		printf("%s: Unaligned access to %x!\n", __FUNCTION__, address);
+	// if ((address & 1) != 0)
+	// 	printf("%s: Unaligned access to %x!\n", __FUNCTION__, address);
 
 	if (mmEnt->memAddr) {
 		uint16_t *p;
@@ -239,9 +239,9 @@ void m68k_write_memory_8(unsigned int address, unsigned int value) {
 
 void m68k_write_memory_16(unsigned int address, unsigned int value) {
 	const MemmapEnt *mmEnt = getMmmapEnt(address);
-	// These printfs causes stack corruption at boot
-	if ((address & 1) != 0)
-		printf("%s: Unaligned access to %x!\n", __FUNCTION__, address);
+	// These printfs cause Panic with stack corruption at boot???
+	// if ((address & 1) != 0)
+	// 	printf("%s: Unaligned access to %x!\n", __FUNCTION__, address);
 
 	if (mmEnt->memAddr) {
 		if (mmEnt->flags & FLAG_RO) {
