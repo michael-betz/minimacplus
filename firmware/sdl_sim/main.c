@@ -50,6 +50,11 @@ void saveRtcMem(char *data) {
 	fclose(f);
 }
 
+uint8_t *ramInit() {
+	printf("Using malloc(%06x) as Mac RAM\n", TME_RAMSIZE);
+	return malloc(TME_RAMSIZE);
+}
+
 //Should be called every second.
 void printFps(unsigned pc) {
 	struct timeval tv;

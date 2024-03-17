@@ -30,11 +30,6 @@
 #include "mouse.h"
 #include "localtalk.h"
 
-#ifndef HOSTBUILD
-	// #include "esp32/himem.h"
-	#include "esp_heap_caps.h"
-#endif
-
 unsigned char *macRom;
 unsigned char *macRam;
 
@@ -192,56 +187,6 @@ uint8_t *macFb[2], *macSnd[2];
 
 #define MMAP_RAM_PTR(ent, addr) &ent->memAddr[addr & (MEMMAP_ES - 1)]
 
-static void ramInit() {
-	#ifdef HOSTBUILD
-		printf("Using malloc(%06x) as Mac RAM\n", TME_RAMSIZE);
-		macRam = malloc(TME_RAMSIZE);
-	#else
-		#ifdef CONFIG_SPIRAM_USE_MEMMAP
-			printf("Using static memory mapping (%06x) as Mac RAM\n", TME_RAMSIZE);
-			macRam = (void*)0x3F800000;
-		#else
-			// for some reason, esp-idf only provides 0x3efff4 / 0x400000 bytes for malloc
-			// Also the framebuffer doesn't seem to work when using malloc()
-			// printf("Using malloc(%06x) as Mac RAM\n", TME_RAMSIZE);
-			// macRam = malloc(TME_RAMSIZE);
-
-			printf("Using heap_caps_malloc(%06x) as Mac RAM\n", TME_RAMSIZE);
-			macRam = heap_caps_malloc(TME_RAMSIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-		#endif
-		// printf("Using PSRAM through HIMEM API as Mac RAM\n");
-		// size_t memcnt = esp_himem_get_phys_size();
-    	// size_t memfree = esp_himem_get_free_size();
-    	// printf("Himem has %d KB of memory, %d KB of which is free.\n", (int)memcnt/1024, (int)memfree/1024);
-
-	    // esp_himem_handle_t mh;  // Handle for the address space we're using
-	    // esp_himem_rangehandle_t rh;  // Handle for the actual RAM.
-
-	    // //Allocate the memory we're going to check.
-	    // ESP_ERROR_CHECK(esp_himem_alloc(check_size, &mh));
-
-	    // //Allocate a block of address range
-	    // ESP_ERROR_CHECK(esp_himem_alloc_map_range(ESP_HIMEM_BLKSZ, &rh));
-	    // for (int i = 0; i < check_size; i += ESP_HIMEM_BLKSZ) {
-	    //     uint32_t *ptr = NULL;
-	    //     //Map in block, write pseudo-random data, unmap block.
-	    //     ESP_ERROR_CHECK(esp_himem_map(mh, rh, i, 0, ESP_HIMEM_BLKSZ, 0, (void**)&ptr));
-	    //     fill_mem_seed(i ^ seed, ptr, ESP_HIMEM_BLKSZ); //
-	    //     ESP_ERROR_CHECK(esp_himem_unmap(rh, ptr, ESP_HIMEM_BLKSZ));
-	    // }
-
-	    //Okay, all done!
-	    // ESP_ERROR_CHECK(esp_himem_free(mh));
-	    // ESP_ERROR_CHECK(esp_himem_free_map_range(rh));
-	#endif
-	assert(macRam);
-
-	macFb[0] = &macRam[TME_SCREENBUF];
-	macFb[1] = &macRam[TME_SCREENBUF_ALT];
-	macSnd[0] = &macRam[TME_SNDBUF];
-	macSnd[1] = &macRam[TME_SNDBUF_ALT];
-}
-
 const inline static MemmapEnt *getMmmapEnt(const unsigned int address) {
 	if (address>=MEMMAP_MAX_ADDR) return &memmap[127];
 	return &memmap[address/MEMMAP_ES];
@@ -354,7 +299,12 @@ void tmeStartEmu(void *rom) {
 	int cyclesPerSec=0;
 
 	macRom = rom;
-	ramInit();
+	macRam = ramInit();
+
+	macFb[0] = &macRam[TME_SCREENBUF];
+	macFb[1] = &macRam[TME_SCREENBUF_ALT];
+	macSnd[0] = &macRam[TME_SNDBUF];
+	macSnd[1] = &macRam[TME_SNDBUF_ALT];
 
 	rom_remap = 1;
 	regenMemmap(1);
