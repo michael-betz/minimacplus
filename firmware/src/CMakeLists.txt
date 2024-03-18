@@ -17,7 +17,10 @@ list(APPEND ALL_SRCS ${SRCS_WIFI})
 list(APPEND ALL_SRCS musashi/m68kcpu.c)
 list(APPEND ALL_SRCS ${SRCS_AUTOGEN})
 
-idf_component_register(SRCS ${ALL_SRCS})
+idf_component_register(
+	SRCS ${ALL_SRCS}
+	LDFRAGMENTS linker_fragment_file.lf
+)
 
 # auto-generate source files for 68k CPU
 # ... doesn't work, will use script in platform.ini as a workaround

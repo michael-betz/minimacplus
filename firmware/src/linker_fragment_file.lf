@@ -1,0 +1,5 @@
+[mapping:src]
+archive: libsrc.a
+entries:
+    musashi/m68kcpu (noflash)     # places all my_src1 code/read-only data under IRAM/DRAM
+    musashi/m68kopdm (noflash)
