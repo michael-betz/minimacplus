@@ -24,7 +24,7 @@
 //We need speed here!
 #pragma GCC optimize ("O3")
 
-#define DO_RESCALE 1
+#define DO_RESCALE 0
 
 #if DO_RESCALE
 	// Floating-point number, actually x/32. Divide mac reso by this to get lcd reso.
@@ -118,7 +118,7 @@ static uint16_t IRAM_ATTR findPixelVal(uint8_t *data, unsigned x, unsigned y) {
 
 	// to find the pixel we need to return the (x % 8)th bit
 	uint8_t mask = 1 << (7 - (x & 7));
-	return (tmp & mask) ? 0xffff : 0;
+	return (tmp & mask) ? 0 : 0xffff;
 	// return (data[y * 64 + (x >> 3)] & (1 << ((7 - x) & 7))) ? 0 : 0xffff;
 }
 

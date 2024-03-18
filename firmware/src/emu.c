@@ -374,7 +374,7 @@ void tmeStartEmu(void *rom) {
 			viaControlWrite(VIA_CA2, ca2);
 			rtcTick();
 			frame=0;
-			// printFps(cyclesPerSec);
+			printFps(cyclesPerSec);
 			cyclesPerSec = 0;
 		}
 	}

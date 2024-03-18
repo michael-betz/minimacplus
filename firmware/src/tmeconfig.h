@@ -3,7 +3,7 @@
 // for the RMA, on host-build we will use malloc()
 // on the esp we will use malloc_caps()
 
-#define TME_ROMSIZE (256*1024)
+#define TME_ROMSIZE (128 * 1024)
 
 // Emulate an 4MiB MacPlus
 #define TME_CACHESIZE (96*1024)

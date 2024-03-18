@@ -50,7 +50,7 @@ static int hdScsiCmd(SCSITransferData *data, unsigned int cmd, unsigned int len,
 	int ret=0;
 	HdPriv *hd = (HdPriv*)arg;
 	if (cmd==0x8 || cmd==0x28) { // read
-		printf("HD:  Read %2d blocks from LBA %5d.\n", len, lba);
+		// printf("HD:  Read %2d blocks from LBA %5d.\n", len, lba);
 		ESP_ERROR_CHECK(esp_partition_read(
 			hd->part,
 			lba * 512,
