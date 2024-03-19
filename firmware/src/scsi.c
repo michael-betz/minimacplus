@@ -889,36 +889,6 @@ unsigned char mac_scsi_get_csd_dma (mac_scsi_t *scsi)
 	return (val);
 }
 
-static
-unsigned char mac_scsi_get_icr (mac_scsi_t *scsi)
-{
-	return (scsi->icr);
-}
-
-static
-unsigned char mac_scsi_get_mr2 (mac_scsi_t *scsi)
-{
-	return (scsi->mr2);
-}
-
-static
-unsigned char mac_scsi_get_tcr (mac_scsi_t *scsi)
-{
-	return (scsi->tcr & 0x0f);
-}
-
-static
-unsigned char mac_scsi_get_csb (mac_scsi_t *scsi)
-{
-	return (scsi->csb);
-}
-
-static
-unsigned char mac_scsi_get_bsr (mac_scsi_t *scsi)
-{
-	return (scsi->bsr);
-}
-
 unsigned char mac_scsi_get_uint8 (void *ext, unsigned long addr)
 {
 	unsigned char val;
@@ -932,24 +902,24 @@ unsigned char mac_scsi_get_uint8 (void *ext, unsigned long addr)
 		break;
 
 	case 0x01: /* ICR */
-		val = mac_scsi_get_icr (scsi);
+		val = scsi->icr;
 		break;
 
 	case 0x02: /* MR2 */
-		val = mac_scsi_get_mr2 (scsi);
+		val = scsi->mr2;
 		break;
 
 	case 0x03: /* TCR */
-		val = mac_scsi_get_tcr (scsi);
+		val = scsi->tcr & 0x0f;
 		break;
 
 	case 0x04: /* CSB */
-		val = mac_scsi_get_csb (scsi);
+		val = scsi->csb;
 		break;
 
 	case 0x05: /* BSR */
 		mac_scsi_check_phase (scsi);
-		val = mac_scsi_get_bsr (scsi);
+		val = scsi->bsr;
 		break;
 
 	case 0x06: /* IDR */
@@ -986,13 +956,6 @@ unsigned short mac_scsi_get_uint16 (void *ext, unsigned long addr)
 #endif
 
 	return (0);
-}
-
-
-static
-void mac_scsi_set_odr (mac_scsi_t *scsi, unsigned char val)
-{
-	scsi->odr = val;
 }
 
 static
@@ -1253,12 +1216,6 @@ void mac_scsi_set_tcr (mac_scsi_t *scsi, unsigned char val)
 #endif
 }
 
-static
-void mac_scsi_set_ser (mac_scsi_t *scsi, unsigned char val)
-{
-	scsi->ser = val;
-}
-
 void mac_scsi_set_uint8 (void *ext, unsigned long addr, unsigned char val)
 {
 	mac_scsi_t *scsi = ext;
@@ -1267,7 +1224,7 @@ void mac_scsi_set_uint8 (void *ext, unsigned long addr, unsigned char val)
 
 	switch (addr) {
 	case 0x00: /* ODR */
-		mac_scsi_set_odr (scsi, val);
+		scsi->odr = val;
 		break;
 
 	case 0x01: /* ICR */
@@ -1283,7 +1240,7 @@ void mac_scsi_set_uint8 (void *ext, unsigned long addr, unsigned char val)
 		break;
 
 	case 0x04: /* SER */
-		mac_scsi_set_ser (scsi, val);
+		scsi->ser = val;
 		break;
 
 	case 0x05: /* start dma send */
@@ -1385,13 +1342,8 @@ static int dsk_adjust_chs (uint32_t *n, uint32_t *c, uint32_t *h, uint32_t *s)
 
 void dsk_init (disk_t *dsk, void *ext, uint32_t n, uint32_t c, uint32_t h, uint32_t s)
 {
-	dsk->type = PCE_DISK_NONE;
-
-	dsk->del = NULL;
 	dsk->read = NULL;
 	dsk->write = NULL;
-	dsk->get_msg = NULL;
-	dsk->set_msg = NULL;
 
 	dsk_adjust_chs (&n, &c, &h, &s);
 
@@ -1400,14 +1352,6 @@ void dsk_init (disk_t *dsk, void *ext, uint32_t n, uint32_t c, uint32_t h, uint3
 	dsk->c = c;
 	dsk->h = h;
 	dsk->s = s;
-
-	dsk->visible_c = c;
-	dsk->visible_h = h;
-	dsk->visible_s = s;
-
-	dsk->readonly = 0;
-
-	dsk->fname = NULL;
 
 	dsk->ext = ext;
 }

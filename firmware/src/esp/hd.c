@@ -14,12 +14,7 @@
 #include "esp_partition.h"
 #include "scsi.h"
 
-
-static void image_del(disk_t *dsk)
-{
-}
-
-static int image_read(disk_t *dsk, void *buf, uint32_t i, uint32_t n)
+int image_read(disk_t *dsk, void *buf, uint32_t i, uint32_t n)
 {
 	esp_partition_t *part = (esp_partition_t *)dsk->ext;
 
@@ -32,20 +27,13 @@ static int image_read(disk_t *dsk, void *buf, uint32_t i, uint32_t n)
 	return 0;
 }
 
-static int image_write(disk_t *dsk, const void *buf, uint32_t i, uint32_t n)
+int image_write(disk_t *dsk, const void *buf, uint32_t i, uint32_t n)
 {
-	// This freezes everything for a few seconds?
-	return 0;
-
 	printf("image_write(%ld, %ld)\n", i, n);
 	esp_partition_t *part = (esp_partition_t *)dsk->ext;
 	const uint8_t *data = buf;
 	// const unsigned erase_size = part->erase_size;
 	const unsigned erase_size = 4096;
-
-	if (dsk->readonly) {
-		return (1);
-	}
 
 	if ((i + n) > dsk->blocks) {
 		return (1);
@@ -88,7 +76,7 @@ disk_t *disk_init(const char *part_name)
 		printf("*** couldn't find partition %s\n", part_name);
 		return NULL;
 	}
-	// Get size of file
+	// Get size of partition
 	long cnt = part->size / 512;
 	if (cnt <= 0) {
 		printf("invalid size %ld\n", cnt);
@@ -97,11 +85,8 @@ disk_t *disk_init(const char *part_name)
 	printf("%ld blocks\n", cnt);
 
 	dsk_init (dsk, (void *)part, cnt, 0, 0, 0);
-	dsk->type = PCE_DISK_RAW;
-	dsk->readonly = 0;
-	dsk->fname = NULL;  // part_name;
-	dsk->del = image_del;
 	dsk->read = image_read;
 	dsk->write = image_write;
+
 	return dsk;
 }

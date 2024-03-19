@@ -13,13 +13,7 @@
 #include <string.h>
 #include "scsi.h"
 
-static void image_del (disk_t *dsk)
-{
-	FILE *fp = (FILE *)dsk->ext;
-	fclose(fp);
-}
-
-static int image_read (disk_t *dsk, void *buf, uint32_t i, uint32_t n)
+int image_read (disk_t *dsk, void *buf, uint32_t i, uint32_t n)
 {
 	// printf("hd_read %04x %d\n", i, n);
 	FILE *fp = (FILE *)dsk->ext;
@@ -42,7 +36,7 @@ static int image_read (disk_t *dsk, void *buf, uint32_t i, uint32_t n)
 	return 0;
 }
 
-static int image_write (disk_t *dsk, const void *buf, uint32_t i, uint32_t n)
+int image_write (disk_t *dsk, const void *buf, uint32_t i, uint32_t n)
 {
 	printf("hd_write %04x %d\n", i, n);
 	FILE *fp = (FILE *)dsk->ext;
@@ -92,11 +86,8 @@ disk_t *disk_init(const char *part_name)
 	printf("%ld blocks\n", cnt);
 
 	dsk_init (dsk, (void *)fp, cnt, 0, 0, 0);
-	dsk->type = PCE_DISK_RAW;
-	dsk->readonly = 0;
-	dsk->fname = NULL;  // part_name;
-	dsk->del = image_del;
 	dsk->read = image_read;
 	dsk->write = image_write;
+
 	return dsk;
 }

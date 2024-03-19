@@ -51,27 +51,14 @@ typedef int (*dsk_set_msg_f) (struct disk_s *dsk, const char *msg, const char *v
 
 
 typedef struct disk_s {
-	unsigned      type;
-
-	void          (*del) (struct disk_s *dsk);
 	dsk_read_f    read;
 	dsk_write_f   write;
-	dsk_get_msg_f get_msg;
-	dsk_set_msg_f set_msg;
 
 	uint32_t      blocks;
 
 	uint32_t      c;
 	uint32_t      h;
 	uint32_t      s;
-
-	uint32_t      visible_c;
-	uint32_t      visible_h;
-	uint32_t      visible_s;
-
-	char          readonly;
-
-	char          *fname;
 
 	void          *ext;
 } disk_t;
