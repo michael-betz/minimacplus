@@ -114,10 +114,10 @@ void app_main()
 	));
 
 	printf("Starting emu...\n");
-	xTaskCreatePinnedToCore(&emuTask, "emu", 6 * 1024, NULL, 5, NULL, 0);
+	xTaskCreatePinnedToCore(&emuTask, "emu", 6 * 1024, NULL, 1, NULL, 0);
 
-	// initWifi();
-	// tryConnect();
+	initWifi();
+	tryConnect();
 }
 
 
@@ -199,7 +199,7 @@ void ws_callback(uint8_t *payload, unsigned len)
 	char tmpStr[256];
 	char *pl = (char*)payload;
 
-	printf("ws_callback(%d)\n", len);
+	// printf("ws_callback(%d)\n", len);
 	if (len < 1)
 		return;
 
@@ -227,7 +227,7 @@ void ws_callback(uint8_t *payload, unsigned len)
 				else if (tok_id == 2)	temp_dy = strtol(tok, NULL, 0);
 				else if (tok_id == 3) 	temp_btn = strtol(tok, NULL, 0);
 			}
-			printf("mouse(%ld, %ld, %ld)\n", temp_dx, temp_dy, temp_btn);
+			// printf("mouse(%ld, %ld, %ld)\n", temp_dx, temp_dy, temp_btn);
 			mouseMove(temp_dx, temp_dy, temp_btn);
 			break;
 	}

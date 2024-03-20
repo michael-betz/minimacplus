@@ -22,89 +22,8 @@
 #include "oled.h"
 
 //We need speed here!
-#pragma GCC optimize ("O3")
+// #pragma GCC optimize ("O3")
 
-#define DO_RESCALE 0
-
-#if DO_RESCALE
-	// Floating-point number, actually x/32. Divide mac reso by this to get lcd reso.
-	#define SCALE_FACT 42  // 51
-#else
-	#define SCALE_FACT 32
-#endif
-
-static uint8_t mask[512];
-
-static void calcLut() {
-	for (int i=0; i<512; i++)
-		mask[i] = (1 << (7 - (i & 7)));
-}
-
-//Returns 0-1024
-static int IRAM_ATTR findMacVal(uint8_t *data, int x, int y) {
-	int a,b,c,d;
-	int v=0;
-	int rx=x/32;
-	int ry=y/32;
-
-	if (ry>=342) return 0;
-
-	a=data[ry*(512/8)+rx/8]&mask[rx];
-	rx++;
-	b=data[ry*(512/8)+rx/8]&mask[rx];
-	rx--; ry++;
-	if (ry<342) {
-		c=data[ry*(512/8)+rx/8]&mask[rx];
-		rx++;
-		d=data[ry*(512/8)+rx/8]&mask[rx];
-	} else {
-		c=1;
-		d=1;
-	}
-
-	if (!a) v+=(31-(x&31))*(31-(y&31));
-	if (!b) v+=(x&31)*(31-(y&31));
-	if (!c) v+=(31-(x&31))*(y&31);
-	if (!d) v+=(x&31)*(y&31);
-
-	return v;
-}
-
-
-// Even pixels: a
-//  RRBB
-//   GG
-//
-// Odd pixels: b
-//   GG
-//  RRBB
-//
-// Even lines start with an even pixel, odd lines with an odd pixel.
-//
-// Due to the weird buildup, a horizontal subpixel actually is 1/3rd real pixel wide!
-
-#if DO_RESCALE
-
-static uint16_t IRAM_ATTR findPixelVal(uint8_t *data, int x, int y) {
-	int sx=(x*SCALE_FACT); //32th is 512/320 -> scale 512 mac screen to 320 width
-	int sy=(y*SCALE_FACT);
-	//sx and sy are now 27.5 fixed point values for the 'real' mac-like components
-	int r,g,b;
-	if (((x+y)&1)) {
-		//pixel a
-		r=findMacVal(data, sx, sy);
-		b=findMacVal(data, sx+(SCALE_FACT/3)*2, sy);
-		g=findMacVal(data, sx+(SCALE_FACT/3), sy+(SCALE_FACT/2));
-	} else {
-		//pixel b
-		r=findMacVal(data, sx, sy+10);
-		b=findMacVal(data, sx+(SCALE_FACT/3)*2, sy+(SCALE_FACT/1));
-		g=findMacVal(data, sx+(SCALE_FACT/3), sy);
-	}
-	return ((r>>5)<<0)|((g>>4)<<5)|((b>>5)<<11);
-}
-
-#else
 //Stupid 1-to-1 routine
 static uint16_t IRAM_ATTR findPixelVal(uint8_t *data, unsigned x, unsigned y) {
 	// Something is quite wrong here :(
@@ -122,10 +41,7 @@ static uint16_t IRAM_ATTR findPixelVal(uint8_t *data, unsigned x, unsigned y) {
 	// return (data[y * 64 + (x >> 3)] & (1 << ((7 - x) & 7))) ? 0 : 0xffff;
 }
 
-#endif
-
-volatile static uint8_t *currFbPtr = NULL;
-SemaphoreHandle_t dispSem = NULL;
+TaskHandle_t th_display = NULL;
 
 // TODO completely glitched up display when this is changed to larger values than 32. Why?
 #define LINESPERBUF 32
@@ -134,25 +50,26 @@ SemaphoreHandle_t dispSem = NULL;
 #define YOFFSET 0
 
 static void IRAM_ATTR displayTask(void *arg) {
-	// uint8_t *img = malloc((LINESPERBUF * 320 * 2));
-	static uint8_t img[LINESPERBUF * 320 * 2];
-	// assert(img);
+	uint8_t *img = malloc((LINESPERBUF * 320 * 2));
+	// static uint8_t img[LINESPERBUF * 320 * 2];
+	assert(img);
 
-	calcLut();
+	// calcLut();
 
-	// uint8_t *oldImg = malloc(512 * 342 / 8);
-	static uint8_t oldImg[512 * 342 / 8];
-	// assert(oldImg);
+	uint8_t *oldImg = malloc(512 * 342 / 8);
+	// static uint8_t oldImg[512 * 342 / 8];
+	assert(oldImg);
 
 	int firstrun = 1;
 	setColRange(0, 319);
 
 	while(1) {
+		uint8_t *myData = NULL;
+
 		mipiResync();
 
 		// Wait for emulator to release the display memory
-		xSemaphoreTake(dispSem, portMAX_DELAY);
-		uint8_t *myData = (uint8_t*)currFbPtr;
+		xTaskNotifyWait(0, 0, (uint32_t*)(&myData), portMAX_DELAY);
 
 		int ystart, yend;
 		if (!firstrun) {
@@ -171,8 +88,8 @@ static void IRAM_ATTR displayTask(void *arg) {
 				//Only copy changed bits of data to changebuffer
 				memcpy(oldImg + ystart * 64, myData + ystart * 64, (yend - ystart) * 64);
 
-				ystart = (ystart * 32) / SCALE_FACT - 1;
-				yend = (yend * 32) / SCALE_FACT + 2;
+				ystart = ystart - 1;
+				yend = yend + 2;
 				if (ystart < 0)
 					ystart = 0;
 				// printf("disp: updating lines %d to %d\n", ystart, yend);
@@ -212,14 +129,12 @@ static void IRAM_ATTR displayTask(void *arg) {
 // Functions below are called by the emulator task
 
 void dispDraw(uint8_t *mem) {
-	currFbPtr = mem;
-	xSemaphoreGive(dispSem);
+	xTaskNotify(th_display, (uint32_t)mem, eSetValueWithOverwrite);
 }
 
 void dispInit() {
 	mipiInit();
 	initOled();
 	// set_brightness(5);
-    dispSem = xSemaphoreCreateBinary();
-	xTaskCreatePinnedToCore(&displayTask, "display", 6 * 1024, NULL, 5, NULL, 1);
+	xTaskCreatePinnedToCore(&displayTask, "display", 6 * 1024, NULL, 5, &th_display, 1);
 }
