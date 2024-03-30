@@ -328,8 +328,8 @@ void tmeStartEmu(void *rom) {
 	printf("Sound and display init...\n");
 	sndInit();
 	dispInit();
-	localtalkInit();
-	mouse_init();
+	// localtalkInit();
+	// mouse_init();
 
 	// #if TME_DISABLE_MEMTEST
 	// 	printf("disabling startup memory test\n");
@@ -356,7 +356,7 @@ void tmeStartEmu(void *rom) {
 
 		// do these every frame
 		dispDraw(macFb[video_remap ? 1 : 0]);
-		mouse_read();
+		// mouse_read();
 		sndPush(macSnd[audio_remap ? 1 : 0], audio_en ? audio_volume : 0);
 		localtalkTick();
 		frame++;

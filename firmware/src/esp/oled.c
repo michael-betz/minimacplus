@@ -65,8 +65,6 @@ static DispPacket initPackets[] = {
 
 #define N_INIT_PACKETS (sizeof(initPackets) / sizeof(initPackets[0]))
 
-#define N_LINES 32
-
 void initOled() {
 	//Reset display
 	gpio_set_level(GPIO_NRST, 0);
@@ -95,11 +93,9 @@ void initOled() {
 	}
 	vTaskDelay(10 / portTICK_PERIOD_MS);
 
-	// uint8_t clrData[N_LINES + 1] = {0x2c, 0, 0, 0};
-	// for (int i=0; i < (320 * 340 * 2) / N_LINES; i++) {
-	// 	mipiDsiSendLong(0x39, clrData, N_LINES);
-	// 	clrData[0] = 0x3C;
-	// }
+	// uint8_t clrData[1600] = {0};
+	// for (int i=0; i < 128; i++)
+	// 	mipiDsiSendLong(0x39, i == 0 ? 0x2c : 0x3c, clrData, sizeof(clrData));
 
 	printf("Display inited.\n");
 }
