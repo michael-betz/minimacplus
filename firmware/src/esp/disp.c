@@ -68,6 +68,8 @@ static void IRAM_ATTR displayTask(void *arg) {
 	// static uint8_t oldImg[XSIZE_M * YSIZE_M / 8];
 	assert(oldImg);
 
+	fillRect(0, 319, 0, 319, 0);
+
 	// int firstrun = 1;
 	setColRange(0, XSIZE - 1);
 	setRowRange(YOFFSET, YOFFSET + YSIZE - 1);
