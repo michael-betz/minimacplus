@@ -328,7 +328,7 @@ void tmeStartEmu(void *rom) {
 	printf("Sound and display init...\n");
 	sndInit();
 	dispInit();
-	localtalkInit();
+	// localtalkInit();
 	mouse_init();
 
 	// #if TME_DISABLE_MEMTEST

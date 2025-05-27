@@ -27,5 +27,5 @@ void setRowRange(int ystart, int yend);
 // Anything below 100 is basically off
 void set_brightness(uint8_t val);
 
-
+// coordinates are from 0 to 319
 void fillRect(int x0, int x1, int y0, int y1, uint16_t color);

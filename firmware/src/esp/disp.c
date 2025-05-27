@@ -20,100 +20,20 @@
 
 #include "mipi_dsi.h"
 #include "oled.h"
+#include "emu.h"
 
 //We need speed here!
 #pragma GCC optimize ("O3")
 
-#define DO_RESCALE 0
-
-#if DO_RESCALE
-	// Floating-point number, actually x/32. Divide mac reso by this to get lcd reso.
-	#define SCALE_FACT 42  // 51
-#else
-	#define SCALE_FACT 32
-#endif
-
-static uint8_t mask[512];
-
-static void calcLut() {
-	for (int i=0; i<512; i++)
-		mask[i] = (1 << (7 - (i & 7)));
-}
-
-//Returns 0-1024
-static int IRAM_ATTR findMacVal(uint8_t *data, int x, int y) {
-	int a,b,c,d;
-	int v=0;
-	int rx=x/32;
-	int ry=y/32;
-
-	if (ry>=342) return 0;
-
-	a=data[ry*(512/8)+rx/8]&mask[rx];
-	rx++;
-	b=data[ry*(512/8)+rx/8]&mask[rx];
-	rx--; ry++;
-	if (ry<342) {
-		c=data[ry*(512/8)+rx/8]&mask[rx];
-		rx++;
-		d=data[ry*(512/8)+rx/8]&mask[rx];
-	} else {
-		c=1;
-		d=1;
-	}
-
-	if (!a) v+=(31-(x&31))*(31-(y&31));
-	if (!b) v+=(x&31)*(31-(y&31));
-	if (!c) v+=(31-(x&31))*(y&31);
-	if (!d) v+=(x&31)*(y&31);
-
-	return v;
-}
-
-
-// Even pixels: a
-//  RRBB
-//   GG
-//
-// Odd pixels: b
-//   GG
-//  RRBB
-//
-// Even lines start with an even pixel, odd lines with an odd pixel.
-//
-// Due to the weird buildup, a horizontal subpixel actually is 1/3rd real pixel wide!
-
-#if DO_RESCALE
-
-static uint16_t IRAM_ATTR findPixelVal(uint8_t *data, int x, int y) {
-	int sx=(x*SCALE_FACT); //32th is 512/320 -> scale 512 mac screen to 320 width
-	int sy=(y*SCALE_FACT);
-	//sx and sy are now 27.5 fixed point values for the 'real' mac-like components
-	int r,g,b;
-	if (((x+y)&1)) {
-		//pixel a
-		r=findMacVal(data, sx, sy);
-		b=findMacVal(data, sx+(SCALE_FACT/3)*2, sy);
-		g=findMacVal(data, sx+(SCALE_FACT/3), sy+(SCALE_FACT/2));
-	} else {
-		//pixel b
-		r=findMacVal(data, sx, sy+10);
-		b=findMacVal(data, sx+(SCALE_FACT/3)*2, sy+(SCALE_FACT/1));
-		g=findMacVal(data, sx+(SCALE_FACT/3), sy);
-	}
-	return ((r>>5)<<0)|((g>>4)<<5)|((b>>5)<<11);
-}
-
-#else
 //Stupid 1-to-1 routine
 static uint16_t IRAM_ATTR findPixelVal(uint8_t *data, unsigned x, unsigned y) {
 	// Something is quite wrong here :(
-	// data is the 512 x 342 x 1 bit image from the emulator
+	// data is the XSIZE_M x YSIZE_M x 1 bit image from the emulator
 	// x and y varies from 0 to 319
 	// return the color in RGB565 of the pixel at x, y
 
 	// going 8 pixels to the right means incrementing by one byte
-	// going 1 pixel down means incrementing by 512 / 8 = 64 bytes
+	// going 1 pixel down means incrementing by XSIZE_M / 8 = 64 bytes
 	uint8_t tmp = data[x / 8 + y * 64];
 
 	// to find the pixel we need to return the (x % 8)th bit
@@ -122,104 +42,133 @@ static uint16_t IRAM_ATTR findPixelVal(uint8_t *data, unsigned x, unsigned y) {
 	// return (data[y * 64 + (x >> 3)] & (1 << ((7 - x) & 7))) ? 0 : 0xffff;
 }
 
-#endif
-
-volatile static uint8_t *currFbPtr = NULL;
-SemaphoreHandle_t dispSem = NULL;
-
-// TODO completely glitched up display when this is changed to larger values than 32. Why?
-#define LINESPERBUF 32
+TaskHandle_t th_display = NULL;
 
 //Use this to move the display area down.
 #define YOFFSET 0
 
+// Size of the displayed area
+#define XSIZE 320
+#define YSIZE 250
+
+// Size of the Macintosh screen
+#define XSIZE_M 512
+#define YSIZE_M 342
+
+// TODO completely glitched up display when this is changed to larger values than 32. Why?
+#define LINESPERBUF 32
+
 static void IRAM_ATTR displayTask(void *arg) {
-	// uint8_t *img = malloc((LINESPERBUF * 320 * 2));
-	static uint8_t img[LINESPERBUF * 320 * 2];
-	// assert(img);
+	uint8_t *img = malloc(LINESPERBUF * XSIZE * 2);
+	// static uint8_t img[LINESPERBUF * XSIZE * 2];
+	assert(img);
+	memset(img, 0, LINESPERBUF * XSIZE * 2);
 
-	calcLut();
+	uint8_t *oldImg = malloc(XSIZE_M * YSIZE_M / 8);
+	// static uint8_t oldImg[XSIZE_M * YSIZE_M / 8];
+	assert(oldImg);
 
-	// uint8_t *oldImg = malloc(512 * 342 / 8);
-	static uint8_t oldImg[512 * 342 / 8];
-	// assert(oldImg);
+	fillRect(0, 319, 0, 319, 0);
 
-	int firstrun = 1;
-	setColRange(0, 319);
+	// int firstrun = 1;
+	setColRange(0, XSIZE - 1);
+	setRowRange(YOFFSET, YOFFSET + YSIZE - 1);
 
 	while(1) {
-		mipiResync();
+		uint8_t *myData = NULL;
+
+		// mipiResync();
 
 		// Wait for emulator to release the display memory
-		xSemaphoreTake(dispSem, portMAX_DELAY);
-		uint8_t *myData = (uint8_t*)currFbPtr;
+		xTaskNotifyWait(0, 0, (uint32_t*)(&myData), portMAX_DELAY);
 
-		int ystart, yend;
-		if (!firstrun) {
-			for (ystart=0; ystart < 342; ystart++) {
-				if (memcmp(oldImg + 64 * ystart, myData + 64 * ystart, 64) != 0)
-					break;
-			}
-			for (yend = 342 - 1; yend >= ystart; --yend) {
-				if (memcmp(oldImg + 64 * yend, myData + 64 * yend, 64) != 0)
-					break;
-			}
-			if (ystart == 342) {
-				//No need for update
-				yend = 342;
-			} else {
-				//Only copy changed bits of data to changebuffer
-				memcpy(oldImg + ystart * 64, myData + ystart * 64, (yend - ystart) * 64);
+		memcpy(oldImg, myData, XSIZE_M * YSIZE_M / 8);
 
-				ystart = (ystart * 32) / SCALE_FACT - 1;
-				yend = (yend * 32) / SCALE_FACT + 2;
-				if (ystart < 0)
-					ystart = 0;
-				// printf("disp: updating lines %d to %d\n", ystart, yend);
-			}
-		} else {
-			ystart=0; yend=320;
-		}
-		memcpy(oldImg, myData, 512 * 342 / 8);
+		// Get mouse position, calculate draw window offset
+		int m_y = m68k_read_memory_16(0x0830);
+		int m_x = m68k_read_memory_16(0x0832);
 
-		if (ystart != yend) {
+		if (m_x > XSIZE_M - XSIZE / 2)
+			m_x = XSIZE_M - XSIZE / 2;
+
+		if (m_y > YSIZE_M - YSIZE / 2)
+			m_y = YSIZE_M - YSIZE / 2;
+
+		int o_x = 0, o_y = 0;
+
+		if (m_x > XSIZE / 2)
+			o_x = m_x - XSIZE / 2;
+
+		if (m_y > YSIZE / 2)
+			o_y = m_y - YSIZE / 2;
+
+
+		// int ystart = 0;
+		// int yend = YSIZE;
+		// if (!firstrun) {
+		// 	for (ystart=0; ystart < YSIZE_M; ystart++) {
+		// 		if (memcmp(oldImg + 64 * ystart, myData + 64 * ystart, 64) != 0)
+		// 			break;
+		// 	}
+		// 	for (yend = YSIZE_M - 1; yend >= ystart; --yend) {
+		// 		if (memcmp(oldImg + 64 * yend, myData + 64 * yend, 64) != 0)
+		// 			break;
+		// 	}
+		// 	if (ystart == YSIZE_M) {
+		// 		//No need for update
+		// 		yend = YSIZE_M;
+		// 	} else {
+		// 		//Only copy changed bits of data to changebuffer
+		// 		memcpy(oldImg + ystart * 64, myData + ystart * 64, (yend - ystart) * 64);
+
+		// 		ystart = ystart - 1;
+		// 		yend = yend + 2;
+		// 		if (ystart < 0)
+		// 			ystart = 0;
+		// 		// printf("disp: updating lines %d to %d\n", ystart, yend);
+		// 	}
+		// } else {
+		// 	ystart=0; yend=XSIZE;
+		// }
+		// memcpy(oldImg, myData, XSIZE_M * YSIZE_M / 8);
+
+		// if (ystart != yend) {
 			// don't write too many lines into the framebuffer (it will wrap around)
-			if (yend > 320)
-				yend = 320;
-			setRowRange(ystart + YOFFSET, 319);
+			// if (yend > XSIZE)
+			// 	yend = XSIZE;
+			// setRowRange(ystart + YOFFSET, yend + YOFFSET);
 			uint8_t cmd = 0x2c;  // start sending data
 			uint8_t *p = img;
 			int l = 0;
-			for (int y=ystart; y<yend; y++) {
-				for (int x=0; x<320; x++) {
-					uint16_t v = findPixelVal(oldImg, x, y);
+			for (int y=YOFFSET; y<YOFFSET + YSIZE; y++) {
+				for (int x=0; x<XSIZE; x++) {
+					uint16_t v = findPixelVal(oldImg, x + o_x, y + o_y);
+					// uint16_t v = ((oldImg[x / 8 + y * 64]) & (0x80 >> (x & 7))) ? 0 : 0xffff;
 					*p++ = v;
 					*p++ = v >> 8;
 				}
 				l++;
-				if (l >= LINESPERBUF || y >= yend - 1) {
-					mipiDsiSendLong(0x39, cmd, img, l * 320 * 2);
+				if (l >= LINESPERBUF || y >= (YOFFSET + YSIZE - 1)) {
+					mipiDsiSendLong(0x39, cmd, img, l * XSIZE * 2);
 					cmd = 0x3c;  // continue sending data
 					l = 0;
 					p = img;
 				}
 			}
 		}
-		firstrun = 0;
-	}
+	// 	firstrun = 0;
+	// }
 }
 
 // Functions below are called by the emulator task
 
 void dispDraw(uint8_t *mem) {
-	currFbPtr = mem;
-	xSemaphoreGive(dispSem);
+	xTaskNotify(th_display, (uint32_t)mem, eSetValueWithOverwrite);
 }
 
 void dispInit() {
 	mipiInit();
 	initOled();
 	// set_brightness(5);
-    dispSem = xSemaphoreCreateBinary();
-	xTaskCreatePinnedToCore(&displayTask, "display", 6 * 1024, NULL, 5, NULL, 1);
+	xTaskCreatePinnedToCore(&displayTask, "display", 6 * 1024, NULL, 5, &th_display, 1);
 }

@@ -114,7 +114,7 @@ void app_main()
 	));
 
 	printf("Starting emu...\n");
-	xTaskCreatePinnedToCore(&emuTask, "emu", 6 * 1024, NULL, 5, NULL, 0);
+	xTaskCreatePinnedToCore(&emuTask, "emu", 6 * 1024, NULL, 2, NULL, 0);
 
 	// initWifi();
 	// tryConnect();
@@ -172,15 +172,19 @@ void printFps(unsigned pc) {
 	static struct timeval oldtv;
 	// static char buf[512];
 
+	int m_y = m68k_read_memory_16(0x0830);
+	int m_x = m68k_read_memory_16(0x0832);
+
 	gettimeofday(&tv, NULL);
 	if (oldtv.tv_sec!=0) {
 		long msec=(tv.tv_sec-oldtv.tv_sec)*1000;
 		msec+=(tv.tv_usec-oldtv.tv_usec)/1000;
 		printf(
-			"pc: %06x, speed: %3d%%, heap: %3d kB\n",
+			"pc: %06x, speed: %3d%%, heap: %3d kB, mouse: %3d, %3d\n",
 			pc,
 			(int)(100000/msec),
-			heap_caps_get_largest_free_block(0) / 1024
+			heap_caps_get_largest_free_block(0) / 1024,
+			m_x, m_y
 		);
 
 		// Print task list with stack watermark
@@ -199,7 +203,7 @@ void ws_callback(uint8_t *payload, unsigned len)
 	char tmpStr[256];
 	char *pl = (char*)payload;
 
-	printf("ws_callback(%d)\n", len);
+	// printf("ws_callback(%d)\n", len);
 	if (len < 1)
 		return;
 
@@ -207,10 +211,10 @@ void ws_callback(uint8_t *payload, unsigned len)
 
 	switch (pl[0]) {
 		case 'i':  // 'i' command = RSSI
-			int rssi = 0;
-			esp_wifi_sta_get_rssi(&rssi);
-			snprintf(tmpStr, sizeof(tmpStr), "{\"RSSI\": %d}", rssi);
-			ws_send((uint8_t*)tmpStr, strnlen(tmpStr, sizeof(tmpStr)));
+			// int rssi = 0;
+			// esp_wifi_sta_get_rssi(&rssi);
+			// snprintf(tmpStr, sizeof(tmpStr), "{\"RSSI\": %d}", rssi);
+			// ws_send((uint8_t*)tmpStr, strnlen(tmpStr, sizeof(tmpStr)));
 			break;
 
 		case 'm':  // 'm,12,45,0' update mouse dx, dy, btn
@@ -227,7 +231,7 @@ void ws_callback(uint8_t *payload, unsigned len)
 				else if (tok_id == 2)	temp_dy = strtol(tok, NULL, 0);
 				else if (tok_id == 3) 	temp_btn = strtol(tok, NULL, 0);
 			}
-			printf("mouse(%ld, %ld, %ld)\n", temp_dx, temp_dy, temp_btn);
+			// printf("mouse(%ld, %ld, %ld)\n", temp_dx, temp_dy, temp_btn);
 			mouseMove(temp_dx, temp_dy, temp_btn);
 			break;
 	}

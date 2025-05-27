@@ -31,6 +31,7 @@ void mouseMove(int dx, int dy, int btn) {
 	if (mouse.dx<-MAXCDX) mouse.dx=-MAXCDX;
 	if (mouse.dy<-MAXCDX) mouse.dy=-MAXCDX;
 	if (btn) mouse.btn=1; else mouse.btn=0;
+	// printf("%d, %d, %d\n", mouse.rpx, mouse.rpy, mouse.btn);
 }
 
 void mouseTick() {
